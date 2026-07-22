@@ -1,0 +1,49 @@
+import { z } from 'zod';
+
+/**
+ * Env validation schema. Loaded by ConfigModule; the app refuses to boot
+ * (ConfigModule throws) if any required var is missing or malformed — we never
+ * run with a half-configured env (e.g. empty JWT secret).
+ */
+export const envValidationSchema = z.object({
+  NODE_ENV: z
+    .enum(['development', 'test', 'production'])
+    .default('development'),
+  PORT: z.coerce.number().int().positive().default(3000),
+
+  CORS_ORIGINS: z
+    .string()
+    .min(1)
+    .transform((v) =>
+      v
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ),
+
+  DATABASE_URL: z.string().min(1).url(),
+
+  JWT_ACCESS_SECRET: z.string().min(16),
+  JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
+  JWT_REFRESH_SECRET: z.string().min(16),
+  JWT_REFRESH_EXPIRES_IN: z.string().default('30d'),
+
+  REFRESH_COOKIE_NAME: z.string().default('nl_refresh'),
+  STOCK_ENCRYPTION_KEY: z
+    .string()
+    .length(64, 'STOCK_ENCRYPTION_KEY must be 64 hex chars (32 bytes)'),
+  COOKIE_SECURE: z
+    .union([z.string(), z.boolean()])
+    .transform((v) => v === true || v === 'true')
+    .default(false),
+  COOKIE_SAMESITE: z.enum(['strict', 'lax', 'none']).default('strict'),
+
+  R2_ACCESS_KEY_ID: z.string().default(''),
+  R2_SECRET_ACCESS_KEY: z.string().default(''),
+  R2_BUCKET_NAME: z.string().default('nodeline-images'),
+  R2_ACCOUNT_ID: z.string().default(''),
+  R2_PUBLIC_URL: z.string().optional(),
+  R2_UPLOAD_EXPIRES_IN: z.coerce.number().int().positive().default(600),
+});
+
+export type EnvConfig = z.infer<typeof envValidationSchema>;
