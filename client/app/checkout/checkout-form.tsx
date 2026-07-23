@@ -11,6 +11,8 @@ import {
   RefreshCw,
   CheckCircle2,
   AlertCircle,
+  QrCode,
+  Banknote,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,11 +26,136 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/lib/toast";
-import { useProduct, useCheckout, useUploadPaymentProof } from "@/features/marketplace/hooks";
+import {
+  useProduct,
+  useCheckout,
+  useUploadPaymentProof,
+  usePaymentMethods,
+} from "@/features/marketplace/hooks";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { useAuthStore } from "@/stores/auth-store";
 
 function formatPrice(cents: number): string {
   return `Rp ${cents.toLocaleString("id-ID")}`;
+}
+
+function PaymentMethodsSection() {
+  const { data: methods, isLoading } = usePaymentMethods();
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Metode Pembayaran</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-12 w-12 rounded-lg" />
+            <div className="space-y-1.5">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!methods || methods.length === 0) {
+    return null;
+  }
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Metode Pembayaran</CardTitle>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <p className="mb-3 text-xs text-muted-foreground">
+          Pilih dan transfer ke salah satu metode di bawah:
+        </p>
+        <Accordion className="border rounded-lg divide-y divide-border">
+          {methods.map((method) => (
+            <AccordionItem key={method.id} value={method.id} className="border-0">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline group-aria-expanded/accordion-trigger:text-foreground">
+                <div className="flex items-center gap-3">
+                  <div className="shrink-0">
+                    {method.type === "qris" ? (
+                      <div className="flex size-10 items-center justify-center rounded-lg bg-emerald-500/10">
+                        <QrCode className="size-5 text-emerald-600" />
+                      </div>
+                    ) : (
+                      <div className="flex size-10 items-center justify-center rounded-lg bg-blue-500/10">
+                        <Banknote className="size-5 text-blue-600" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1 text-left">
+                    <p className="text-sm font-medium">{method.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {method.type === "qris" ? "QRIS" : "Transfer Bank"}
+                    </p>
+                  </div>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-4 pb-4">
+                {method.type === "qris" ? (
+                  <div className="flex flex-col items-center gap-3 py-4">
+                    <div className="relative overflow-hidden rounded-xl border border-border bg-white p-4 shadow-sm">
+                      <img
+                        src={method.imageUrl}
+                        alt={method.name}
+                        className="mx-auto size-56 object-contain"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src =
+                            "https://placehold.co/400x400?text=QRIS";
+                        }}
+                      />
+                    </div>
+                    <p className="text-center text-xs text-muted-foreground">
+                      Scan QRIS di atas menggunakan aplikasi pembayaran Anda
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 py-2">
+                    <div className="overflow-hidden rounded-lg border border-border">
+                      <img
+                        src={method.imageUrl}
+                        alt={method.name}
+                        className="h-32 w-full object-cover"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).style.display =
+                            "none";
+                        }}
+                      />
+                    </div>
+                    <div className="rounded-lg border border-border bg-muted/30 p-3">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Detail Rekening
+                      </p>
+                      <p className="mt-1 font-medium">{method.accountName || method.name}</p>
+                      {method.accountNumber && (
+                        <div className="mt-1.5 flex items-center gap-2">
+                          <code className="rounded bg-background px-2 py-1 font-mono text-sm font-semibold tracking-wider">
+                            {method.accountNumber}
+                          </code>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      </CardContent>
+    </Card>
+  );
 }
 
 export function CheckoutForm() {
@@ -207,10 +334,13 @@ export function CheckoutForm() {
             </CardContent>
           </Card>
 
+          {/* Payment Methods */}
+          <PaymentMethodsSection />
+
           {/* Payment */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Pembayaran</CardTitle>
+              <CardTitle className="text-base">Upload Bukti Pembayaran</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="rounded-lg border border-dashed border-border p-4">

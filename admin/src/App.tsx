@@ -12,6 +12,7 @@ import { AllOrdersPage } from "@/pages/AllOrdersPage";
 import { OrderDetailPage } from "@/pages/OrderDetailPage";
 import { UsersPage } from "@/pages/UsersPage";
 import { SettingsPage } from "@/pages/SettingsPage";
+import { PaymentMethodsPage } from "@/pages/PaymentMethodsPage";
 import { CategoriesPage } from "@/pages/CategoriesPage";
 import { ChatConversationsPage } from "@/pages/ChatConversationsPage";
 import { ChatConversationDetailPage } from "@/pages/ChatConversationDetailPage";
@@ -62,7 +63,8 @@ export function App() {
                 <Route path="dashboard/categories" element={<CategoriesPage />} />
                 <Route path="dashboard/chat" element={<ChatConversationsPage />} />
                 <Route path="dashboard/chat/:id" element={<ChatConversationDetailPage />} />
-                  <Route path="dashboard/settings" element={<SettingsPage />} />
+                  <Route path="dashboard/payment-methods" element={<PaymentMethodsPage />} />
+                <Route path="dashboard/settings" element={<SettingsPage />} />
                 </Route>
               </Route>
             </Route>

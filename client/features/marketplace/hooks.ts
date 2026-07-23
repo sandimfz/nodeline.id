@@ -9,6 +9,7 @@ import {
   fetchOrderItemContent,
   updatePaymentNote,
   uploadPaymentProof,
+  fetchPaymentMethods,
 } from "./api";
 import type { CheckoutInput } from "./types";
 
@@ -81,6 +82,15 @@ export function useUpdatePaymentNote(orderId: string) {
         queryKey: queryKeys.marketplace.orders.detail(orderId),
       });
     },
+  });
+}
+
+/** Get active payment methods */
+export function usePaymentMethods() {
+  return useQuery({
+    queryKey: queryKeys.marketplace.paymentMethods.all,
+    queryFn: fetchPaymentMethods,
+    staleTime: 60_000,
   });
 }
 

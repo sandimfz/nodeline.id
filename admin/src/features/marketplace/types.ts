@@ -131,6 +131,33 @@ export interface ManualRestockInput {
   content: string;
 }
 
+export interface PaymentMethod {
+  id: string;
+  type: "bank_transfer" | "qris";
+  name: string;
+  imageUrl: string;
+  accountNumber: string | null;
+  accountName: string | null;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePaymentMethodInput {
+  type: "bank_transfer" | "qris";
+  name: string;
+  imageUrl: string;
+  accountNumber?: string;
+  accountName?: string;
+  isActive?: boolean;
+  sortOrder?: number;
+}
+
+export interface UpdatePaymentMethodInput extends Partial<CreatePaymentMethodInput> {
+  id: string;
+}
+
 export interface StockUnit {
   id: string;
   content: string;
