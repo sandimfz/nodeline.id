@@ -17,11 +17,11 @@ import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import sharp from 'sharp';
 import { DrizzleService } from '../../../database/drizzle/drizzle.service.js';
-import { products, orders } from '../../../database/drizzle/schema/index.js';
+import { products, orders, users } from '../../../database/drizzle/schema/index.js';
 
-export type UploadPurpose = 'product-image' | 'payment-proof';
+export type UploadPurpose = 'product-image' | 'payment-proof' | 'avatar';
 
-const ALLOWED_PURPOSES: UploadPurpose[] = ['product-image', 'payment-proof'];
+const ALLOWED_PURPOSES: UploadPurpose[] = ['product-image', 'payment-proof', 'avatar'];
 const ALLOWED_MIME_TYPES = [
   'image/jpeg',
   'image/png',
@@ -233,6 +233,36 @@ export class StorageService {
         };
         contentType = mimeMap[metadata.format] ?? 'image/jpeg';
         fileExtension = metadata.format === 'jpeg' ? 'jpg' : metadata.format;
+      } else if (input.purpose === 'avatar') {
+        // ── Avatar: resize ke 400x400, WebP 80% ──
+        if (
+          !metadata.format ||
+          !['jpeg', 'png', 'webp'].includes(metadata.format)
+        ) {
+          throw new BadRequestException(
+            'Format avatar harus JPEG, PNG, atau WebP',
+          );
+        }
+
+        // Ukuran file: maks 2 MB
+        if (fileBuffer.length > 2 * 1024 * 1024) {
+          throw new BadRequestException(
+            'Ukuran file avatar maksimal 2 MB',
+          );
+        }
+
+        uploadBuffer = await sharp(fileBuffer)
+          .resize({
+            width: 400,
+            height: 400,
+            fit: 'cover',
+            position: 'centre',
+          })
+          .webp({ quality: 80 })
+          .toBuffer();
+
+        contentType = 'image/webp';
+        fileExtension = 'webp';
       } else {
         // ── payment-proof: kompres dengan sharp (existing behavior) ──
         if (
@@ -286,6 +316,14 @@ export class StorageService {
     const url = this.publicUrl
       ? `${this.publicUrl}/${fileKey}`
       : `https://${this.bucket}.r2.dev/${fileKey}`;
+
+    // ── Auto-attach avatar ke user ──
+    if (input.purpose === 'avatar') {
+      await this.drizzle.db
+        .update(users)
+        .set({ avatarUrl: url, updatedAt: new Date() })
+        .where(eq(users.id, userId));
+    }
 
     // ── Attach ke product/order ──
     if (input.productId) {

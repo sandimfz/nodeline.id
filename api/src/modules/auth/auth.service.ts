@@ -226,6 +226,26 @@ export class AuthService {
         name: users.name,
         role: users.role,
         isEmailVerified: users.isEmailVerified,
+        avatarUrl: users.avatarUrl,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+      });
+    return updated;
+  }
+
+  /** Update user avatar URL (set to null to remove). */
+  async updateAvatar(userId: string, avatarUrl: string | null) {
+    const [updated] = await this.drizzle.db
+      .update(users)
+      .set({ avatarUrl, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning({
+        id: users.id,
+        email: users.email,
+        name: users.name,
+        role: users.role,
+        isEmailVerified: users.isEmailVerified,
+        avatarUrl: users.avatarUrl,
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,
       });
@@ -241,6 +261,7 @@ export class AuthService {
         name: users.name,
         role: users.role,
         isEmailVerified: users.isEmailVerified,
+        avatarUrl: users.avatarUrl,
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,
       })
@@ -256,6 +277,7 @@ export class AuthService {
         name: users.name,
         role: users.role,
         isEmailVerified: users.isEmailVerified,
+        avatarUrl: users.avatarUrl,
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,
       })
@@ -293,6 +315,7 @@ export class AuthService {
     email: string;
     role: string;
     name?: string;
+    avatarUrl?: string | null;
   }) {
     const accessToken = this.signAccessToken(user);
     const rawRefreshToken = this.generateRefreshTokenRaw();
@@ -309,6 +332,7 @@ export class AuthService {
         email: user.email,
         name: user.name,
         role: user.role,
+        avatarUrl: user.avatarUrl ?? null,
       },
       accessToken,
       refreshToken: rawRefreshToken,

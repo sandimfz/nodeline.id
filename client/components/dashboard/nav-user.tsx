@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {
   Avatar,
+  AvatarImage,
   AvatarFallback,
 } from "@/components/ui/avatar";
 import {
@@ -43,6 +44,9 @@ export function NavUser() {
     <DropdownMenu>
       <DropdownMenuTrigger>
         <Avatar className="size-8">
+          {user.avatarUrl ? (
+            <AvatarImage src={user.avatarUrl} alt={user.name} />
+          ) : null}
           <AvatarFallback>{initials}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
@@ -50,6 +54,9 @@ export function NavUser() {
         <DropdownMenuGroup>
           <DropdownMenuLabel className="flex items-center gap-3 px-1.5 py-2">
             <Avatar className="size-10">
+              {user.avatarUrl ? (
+                <AvatarImage src={user.avatarUrl} alt={user.name} />
+              ) : null}
               <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
             <div>

@@ -1,5 +1,5 @@
 import { bffFetch } from "@/lib/api-client";
-import type { Conversation, Message, TicketResponse } from "./types";
+import type { Conversation, Messages, TicketResponse } from "./types";
 
 /**
  * Get or create active conversation for current user.
@@ -24,11 +24,11 @@ export async function getMessages(
   conversationId: string,
   cursor?: string,
   limit: number = 50,
-): Promise<Message[]> {
+): Promise<Messages[]> {
   const params = new URLSearchParams();
   params.set("limit", String(limit));
   if (cursor) params.set("cursor", cursor);
-  return bffFetch<Message[]>(`/chat/conversations/${conversationId}/messages?${params}`);
+  return bffFetch<Messages[]>(`/chat/conversations/${conversationId}/messages?${params}`);
 }
 
 /**

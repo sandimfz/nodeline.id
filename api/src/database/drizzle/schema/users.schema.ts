@@ -16,6 +16,7 @@ export const users = pgTable('users', {
   name: varchar('name', { length: 100 }).notNull(),
   role: userRoleEnum('role').notNull().default('user'),
   isEmailVerified: boolean('is_email_verified').notNull().default(false),
+  avatarUrl: varchar('avatar_url', { length: 500 }),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });

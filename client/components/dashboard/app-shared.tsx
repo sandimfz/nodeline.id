@@ -61,7 +61,7 @@ export const navGroups: SidebarNavGroup[] = [
     items: [
       {
         title: "Chat",
-        path: "/chat",
+        path: "/dashboard/chat",
         icon: <IconMessageCircle />,
       },
     ],

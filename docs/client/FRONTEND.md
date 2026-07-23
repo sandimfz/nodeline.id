@@ -183,6 +183,19 @@ client/
 - [x] Inline error + toast feedback
 - [x] Loading state on save button
 
+### ✅ Fitur Avatar Upload (SELESAI)
+- [x] Upload avatar via Cloudflare R2 (`POST /storage/upload`, purpose: `avatar`)
+- [x] Server-side resize 400×400 WebP 80% via sharp
+- [x] Auto-attach avatar URL ke user setelah upload
+- [x] Hapus avatar (`DELETE /auth/me/avatar`)
+- [x] Preview `AvatarImage` di profile page
+- [x] `AvatarImage` di chat window (pesan sendiri)
+- [x] `AvatarImage` di nav-user (sidebar dropdown)
+- [x] `AvatarImage` di header
+- [x] Loading state saat upload
+- [x] Validasi client: format JPEG/PNG/WebP, max 2 MB
+- [x] Validasi server: resize, max 2 MB
+
 ### ✅ Fitur Chat (SELESAI)
 - [x] Realtime chat via Socket.IO (namespace `/chat`)
 - [x] One-time ticket auth via BFF route `POST /api/chat/ticket`

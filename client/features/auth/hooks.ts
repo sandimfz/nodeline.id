@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
 import { queryKeys } from "@/lib/query-keys";
-import { loginUser, registerUser, logoutUser, getMe, updateProfile } from "./api";
+import { loginUser, registerUser, logoutUser, getMe, updateProfile, uploadAvatar, deleteAvatar } from "./api";
 import type { LoginInput, RegisterInput } from "./types";
 import type { UpdateProfileInput } from "./schema";
 
@@ -78,6 +78,37 @@ export function useUpdateProfile() {
     mutationFn: (data: UpdateProfileInput) => updateProfile(data),
     onSuccess: (updatedUser) => {
       setUser(updatedUser);
+      queryClient.setQueryData(queryKeys.auth.me, updatedUser);
+    },
+  });
+}
+
+/**
+ * Upload avatar mutation.
+ * Uploads to storage endpoint, server auto-attaches to user.
+ * On success: re-fetches user data.
+ */
+export function useUploadAvatar() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (file: File) => uploadAvatar(file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.me });
+    },
+  });
+}
+
+/**
+ * Delete avatar mutation.
+ * On success: re-fetches user data.
+ */
+export function useDeleteAvatar() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => deleteAvatar(),
+    onSuccess: (updatedUser) => {
       queryClient.setQueryData(queryKeys.auth.me, updatedUser);
     },
   });

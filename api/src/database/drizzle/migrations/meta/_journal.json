@@ -29,6 +29,13 @@
       "when": 1784732546873,
       "tag": "0003_cool_gravity",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1784767872439,
+      "tag": "0004_curly_obadiah_stane",
+      "breakpoints": true
     }
   ]
 }

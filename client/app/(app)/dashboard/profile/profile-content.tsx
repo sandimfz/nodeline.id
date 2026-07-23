@@ -7,12 +7,13 @@ import {
   ShieldCheckIcon,
   TrashIcon,
   UploadIcon,
+  Loader2Icon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useMe, useUpdateProfile } from "@/features/auth/hooks";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useMe, useUpdateProfile, useUploadAvatar, useDeleteAvatar } from "@/features/auth/hooks";
 import { useToast } from "@/lib/toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -24,11 +25,55 @@ import {
 export default function ProfilePage() {
   const { data: user } = useMe();
   const { mutate: updateProfile, isPending } = useUpdateProfile();
+  const { mutate: uploadAvatar, isPending: uploading } = useUploadAvatar();
+  const { mutate: removeAvatar, isPending: removing } = useDeleteAvatar();
   const toast = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const nameRef = useRef<HTMLInputElement>(null);
   const [dirty, setDirty] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validasi ukuran: maks 2 MB
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Ukuran file maksimal 2 MB");
+      return;
+    }
+
+    // Validasi tipe
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      toast.error("Format harus JPEG, PNG, atau WebP");
+      return;
+    }
+
+    uploadAvatar(file, {
+      onSuccess: () => {
+        toast.success("Avatar berhasil diperbarui");
+      },
+      onError: (err: unknown) => {
+        const apiError = err as { message?: string };
+        toast.error(apiError?.message ?? "Gagal upload avatar");
+      },
+    });
+
+    // Reset input
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleDeleteAvatar = () => {
+    removeAvatar(undefined, {
+      onSuccess: () => {
+        toast.success("Avatar berhasil dihapus");
+      },
+      onError: () => {
+        toast.error("Gagal menghapus avatar");
+      },
+    });
+  };
 
   const initials = user?.name
     ?.split(" ")
@@ -112,22 +157,56 @@ export default function ProfilePage() {
         <Section title="Foto">
           <div className="flex items-center gap-5">
             <Avatar className="size-20 shrink-0 border ring-1 ring-border/60">
+              {user?.avatarUrl ? (
+                <AvatarImage
+                  src={user.avatarUrl}
+                  alt={user.name ?? "Avatar"}
+                />
+              ) : null}
               <AvatarFallback className="text-lg bg-gradient-to-br from-primary/40 to-primary/10">
                 {initials ?? "U"}
               </AvatarFallback>
             </Avatar>
             <div className="flex flex-1 flex-col gap-2">
               <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" type="button">
-                  <UploadIcon />
-                  Unggah
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  type="button"
+                  disabled={uploading}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {uploading ? (
+                    <Loader2Icon className="size-4 animate-spin" />
+                  ) : (
+                    <UploadIcon />
+                  )}
+                  {uploading ? "Mengunggah..." : "Unggah"}
                 </Button>
-                <Button size="sm" variant="ghost" type="button">
-                  Hapus
-                </Button>
+                {user?.avatarUrl && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    type="button"
+                    disabled={removing}
+                    onClick={handleDeleteAvatar}
+                  >
+                    {removing ? (
+                      <Loader2Icon className="size-4 animate-spin" />
+                    ) : null}
+                    Hapus
+                  </Button>
+                )}
               </div>
               <p className="text-muted-foreground text-xs">
-                Ukuran yang disarankan: 400×400 PNG, JPG, atau SVG.
+                Format: JPEG, PNG, atau WebP. Maks 2 MB. Ukuran 400×400.
               </p>
             </div>
           </div>
