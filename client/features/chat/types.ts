@@ -8,7 +8,7 @@ export interface Conversation {
   updatedAt: string;
 }
 
-export interface Message {
+export interface Messages {
   id: string;
   conversationId: string;
   senderId: string;

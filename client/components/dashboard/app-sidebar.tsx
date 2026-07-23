@@ -69,8 +69,8 @@ export function AppSidebar() {
 								<SidebarMenu>
 									<SidebarMenuItem>
 										<SidebarMenuButton
-											isActive={pathname === "/chat"}
-											render={<Link href="/chat" />}
+											isActive={pathname === "/dashboard/chat"}
+											render={<Link href="/dashboard/chat" />}
 										>
 											<div className="relative">
 												<IconMessageCircle className="size-4" />

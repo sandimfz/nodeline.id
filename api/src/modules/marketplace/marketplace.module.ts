@@ -14,6 +14,8 @@ import { StorageController } from './storage/storage.controller.js';
 import { StorageService } from './storage/storage.service.js';
 import { CategoriesController } from './categories/categories.controller.js';
 import { CategoriesService } from './categories/categories.service.js';
+import { PaymentMethodsController } from './payment-methods/payment-methods.controller.js';
+import { PaymentMethodsService } from './payment-methods/payment-methods.service.js';
 
 @Module({
   controllers: [
@@ -24,6 +26,7 @@ import { CategoriesService } from './categories/categories.service.js';
     PaymentsController,
     StorageController,
     CategoriesController,
+    PaymentMethodsController,
   ],
   providers: [
     ProductsService,
@@ -34,6 +37,7 @@ import { CategoriesService } from './categories/categories.service.js';
     StockCryptoUtil,
     StorageService,
     CategoriesService,
+    PaymentMethodsService,
   ],
   exports: [AuditLogService, StorageService],
 })

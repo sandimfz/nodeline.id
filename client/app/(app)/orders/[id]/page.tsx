@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowLeft,
   Package,
@@ -14,6 +15,8 @@ import {
   Copy,
   RefreshCw,
   ImageIcon,
+  ExternalLink,
+  ImageUp,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,12 +27,100 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { useToast } from "@/lib/toast";
 import {
   useOrderDetail,
   useOrderItemContent,
 } from "@/features/marketplace/hooks";
 import type { OrderStatus } from "@/features/marketplace/types";
+
+/** Parse [BUKTI BAYAR] URL(s) from payment note */
+function parsePaymentImages(note: string | null): string[] {
+  if (!note) return [];
+  const urls: string[] = [];
+  const regex = /\[BUKTI BAYAR\]\s*(https?:\/\/[^\s]+)/g;
+  let match;
+  while ((match = regex.exec(note)) !== null) {
+    urls.push(match[1]);
+  }
+  return urls;
+}
+
+/** Clean payment note: remove [BUKTI BAYAR] URL lines */
+function cleanPaymentNote(note: string | null): string {
+  if (!note) return "";
+  return note.replace(/\[BUKTI BAYAR\]\s*(https?:\/\/[^\s]+)/g, "").trim();
+}
+
+function PaymentProofSection({ paymentNote }: { paymentNote: string | null }) {
+  if (!paymentNote) return null;
+
+  const images = parsePaymentImages(paymentNote);
+  const cleanNote = cleanPaymentNote(paymentNote);
+
+  if (images.length === 0 && !cleanNote) return null;
+
+  return (
+    <div className="border-t pt-3 space-y-3">
+      <span className="text-muted-foreground">Catatan Pembayaran</span>
+
+      <Accordion multiple className="rounded-lg border divide-y divide-border overflow-hidden">
+        {images.map((url, idx) => (
+          <AccordionItem key={idx} value={`image-${idx}`} className="border-0">
+            <AccordionTrigger className="px-4 py-3 hover:no-underline group-aria-expanded/accordion-trigger:text-foreground">
+              <div className="flex items-center gap-3">
+                <div className="flex size-10 items-center justify-center rounded-lg bg-emerald-500/10">
+                  <ImageUp className="size-5 text-emerald-600" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-medium">Bukti Bayar {idx + 1}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Klik untuk lihat gambar penuh
+                  </p>
+                </div>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-4 pb-4">
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative block overflow-hidden rounded-lg border border-border bg-muted/20 transition-shadow hover:shadow-md"
+              >
+                <Image
+                  src={url}
+                  alt={`Bukti bayar ${idx + 1}`}
+                  width={800}
+                  height={600}
+                  className="h-auto w-full object-contain"
+                />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/30">
+                  <div className="flex items-center gap-2 rounded-full bg-background/90 px-4 py-2 text-sm font-medium opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
+                    <ExternalLink className="size-4" />
+                    Buka di tab baru
+                  </div>
+                </div>
+              </a>
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
+
+      {/* Clean note text */}
+      {cleanNote && (
+        <p className="whitespace-pre-wrap rounded-lg bg-muted/30 p-3 text-xs">
+          {cleanNote}
+        </p>
+      )}
+    </div>
+  );
+}
 
 function formatPrice(cents: number): string {
   return `Rp ${cents.toLocaleString("id-ID")}`;
@@ -74,12 +165,14 @@ export default function OrderDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto w-full max-w-3xl">
-        <Skeleton className="h-6 w-48" />
-        <div className="mt-6 space-y-4">
-          <Skeleton className="h-32 w-full rounded-xl" />
-          <Skeleton className="h-24 w-full rounded-xl" />
-          <Skeleton className="h-40 w-full rounded-xl" />
+      <div className="w-full px-4 md:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-7xl">
+          <Skeleton className="h-6 w-48" />
+          <div className="mt-6 space-y-4">
+            <Skeleton className="h-32 w-full rounded-xl" />
+            <Skeleton className="h-24 w-full rounded-xl" />
+            <Skeleton className="h-40 w-full rounded-xl" />
+          </div>
         </div>
       </div>
     );
@@ -106,7 +199,8 @@ export default function OrderDetailPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-3xl">
+    <div className="w-full px-4 md:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-7xl">
       <Link
         href="/orders"
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -165,14 +259,7 @@ export default function OrderDetailPage() {
             <span className="text-muted-foreground">WhatsApp</span>
             <span>{order.whatsappNumber}</span>
           </div>
-          {order.paymentNote && (
-            <div className="border-t pt-3">
-              <span className="text-muted-foreground">Catatan Pembayaran</span>
-              <p className="mt-1 whitespace-pre-wrap text-xs">
-                {order.paymentNote}
-              </p>
-            </div>
-          )}
+          <PaymentProofSection paymentNote={order.paymentNote} />
         </CardContent>
       </Card>
 
@@ -192,6 +279,7 @@ export default function OrderDetailPage() {
           ))}
         </CardContent>
       </Card>
+      </div>{/* end max-w-7xl */}
     </div>
   );
 }

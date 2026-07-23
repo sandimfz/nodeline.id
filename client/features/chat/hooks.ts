@@ -8,7 +8,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { getSocket, closeSocket } from "./socket";
-import type { Message } from "./types";
+import type { Messages } from "./types";
 import { queryKeys } from "@/lib/query-keys";
 import {
   getOrCreateConversation,
@@ -89,10 +89,10 @@ export function useChatSocket(conversationId: string | undefined) {
         socket.emit("conversation:join", { conversationId: id });
 
         // Handle new messages
-        socket.on("message:new", (message: Message) => {
+        socket.on("message:new", (message: Messages) => {
           // Append to infinite query cache, skip if already exists (optimistic ack)
           queryClient.setQueryData<{
-            pages: Message[][];
+            pages: Messages[][];
             pageParams: unknown[];
           }>(queryKeys.chat.messages(id), (old) => {
             if (!old) return old;
@@ -162,7 +162,7 @@ export function useSendMessage(conversationId: string | undefined) {
       socket.emit("message:send", { conversationId, content, tempId });
 
       // Return a promise that resolves on ack
-      return new Promise<{ tempId: string; message: Message }>(
+      return new Promise<{ tempId: string; message: Messages }>(
         (resolve, reject) => {
           const timeout = setTimeout(() => {
             socket.off("message:ack");
@@ -192,11 +192,11 @@ export function useSendMessage(conversationId: string | undefined) {
 
       // Snapshot previous messages
       const previous = queryClient.getQueryData<
-        { pages: Message[][]; pageParams: unknown[] }
+        { pages: Messages[][]; pageParams: unknown[] }
       >(queryKeys.chat.messages(conversationId));
 
       // Optimistically add the message
-      const optimisticMessage: Message = {
+      const optimisticMessage: Messages = {
         id: tempId,
         conversationId,
         senderId: "temp",
@@ -208,7 +208,7 @@ export function useSendMessage(conversationId: string | undefined) {
       };
 
       queryClient.setQueryData<
-        { pages: Message[][]; pageParams: unknown[] }
+        { pages: Messages[][]; pageParams: unknown[] }
       >(queryKeys.chat.messages(conversationId), (old) => {
         if (!old) return old;
         const [firstPage, ...rest] = old.pages;
@@ -234,7 +234,7 @@ export function useSendMessage(conversationId: string | undefined) {
       if (!conversationId) return;
       // Replace optimistic message with real one
       queryClient.setQueryData<
-        { pages: Message[][]; pageParams: unknown[] }
+        { pages: Messages[][]; pageParams: unknown[] }
       >(queryKeys.chat.messages(conversationId), (old) => {
         if (!old) return old;
         // Jika real message sudah ada (dari socket broadcast), hapus temp saja

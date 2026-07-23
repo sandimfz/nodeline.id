@@ -14,6 +14,8 @@ import type {
   UploadImageResponse,
   AdminOrder,
   AdminOrderDetail,
+  PaymentMethod,
+  CreatePaymentMethodInput,
 } from "./types";
 
 /** Get all active products (public catalog) */
@@ -139,6 +141,56 @@ export async function confirmPayment(
   data: ConfirmPaymentInput,
 ): Promise<PaymentConfirmResponse> {
   const res = await api.post<PaymentConfirmResponse>("/payments/confirm", data);
+  return res.data;
+}
+
+/** Get all payment methods (admin) */
+export async function fetchPaymentMethods(): Promise<PaymentMethod[]> {
+  const res = await api.get<PaymentMethod[]>("/payment-methods/admin");
+  return res.data;
+}
+
+/** Create a payment method (god only) */
+export async function createPaymentMethod(
+  data: CreatePaymentMethodInput,
+): Promise<PaymentMethod> {
+  const res = await api.post<PaymentMethod>("/payment-methods/admin", data);
+  return res.data;
+}
+
+/** Update a payment method (god only) */
+export async function updatePaymentMethod(
+  id: string,
+  data: Partial<CreatePaymentMethodInput>,
+): Promise<PaymentMethod> {
+  const res = await api.patch<PaymentMethod>(
+    `/payment-methods/admin/${id}`,
+    data,
+  );
+  return res.data;
+}
+
+/** Delete a payment method (god only) */
+export async function deletePaymentMethod(
+  id: string,
+): Promise<{ message: string }> {
+  const res = await api.delete<{ message: string }>(
+    `/payment-methods/admin/${id}`,
+  );
+  return res.data;
+}
+
+/** Upload payment method image */
+export async function uploadPaymentImage(
+  file: File,
+): Promise<UploadImageResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("purpose", "product-image");
+
+  const res = await api.post<UploadImageResponse>("/storage/upload", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
   return res.data;
 }
 

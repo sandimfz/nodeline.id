@@ -9,6 +9,9 @@ export const queryKeys = {
       all: ["marketplace", "products"] as const,
       detail: (id: string) => ["marketplace", "products", id] as const,
     },
+    paymentMethods: {
+      all: ["marketplace", "payment-methods"] as const,
+    },
     orders: {
       all: ["marketplace", "orders"] as const,
       detail: (id: string) => ["marketplace", "orders", id] as const,

@@ -107,3 +107,37 @@ export async function updateProfile(data: Record<string, unknown>): Promise<User
 export async function getMe(): Promise<User> {
   return bffFetch<User>("/auth/me");
 }
+
+/**
+ * Upload avatar via storage endpoint.
+ * POST /api/v1/bff/storage/upload with purpose=avatar
+ * The server auto-attaches the URL to the user.
+ */
+export async function uploadAvatar(file: File): Promise<{ url: string }> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("purpose", "avatar");
+
+  const res = await fetch("/api/v1/bff/storage/upload", {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: "Gagal upload avatar" }));
+    throw err;
+  }
+
+  return res.json();
+}
+
+/**
+ * Delete avatar.
+ * DELETE /api/v1/bff/auth/me/avatar → BFF proxies to DELETE /api/v1/auth/me/avatar
+ */
+export async function deleteAvatar(): Promise<User> {
+  return bffFetch<User>("/auth/me/avatar", {
+    method: "DELETE",
+  });
+}

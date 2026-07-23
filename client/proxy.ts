@@ -16,9 +16,11 @@ const SESSION_COOKIE = process.env.SESSION_COOKIE_NAME ?? "nl_session";
 const PROTECTED_ROUTES = [
   "/dashboard",
   "/dashboard/profile",
+  "/dashboard/chat",
   "/orders",
   "/checkout",
   "/admin",
+  "/chat",
 ];
 
 // Routes for unauthenticated users only
@@ -52,8 +54,10 @@ export const config = {
     "/auth/:path*",
     "/dashboard/:path*",
     "/dashboard/profile",
+    "/dashboard/chat",
     "/orders/:path*",
     "/checkout/:path*",
     "/admin/:path*",
+    "/chat",
   ],
 };

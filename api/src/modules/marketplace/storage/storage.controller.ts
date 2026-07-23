@@ -78,14 +78,14 @@ export class StorageController {
       throw new BadRequestException('Purpose wajib diisi');
     }
 
-    if (!['product-image', 'payment-proof'].includes(purpose)) {
+    if (!['product-image', 'payment-proof', 'avatar'].includes(purpose)) {
       throw new BadRequestException(
-        'Purpose harus product-image atau payment-proof',
+        'Purpose harus product-image, payment-proof, atau avatar',
       );
     }
 
     return this.storage.uploadImage(user.id, file.buffer, {
-      purpose: purpose as 'product-image' | 'payment-proof',
+      purpose: purpose as 'product-image' | 'payment-proof' | 'avatar',
       productId,
       orderId,
     });

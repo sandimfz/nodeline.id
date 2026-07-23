@@ -6,6 +6,7 @@ import type {
   CheckoutInput,
   ContentResponse,
   UploadResponse,
+  PaymentMethod,
 } from "./types";
 
 /** Get single product by id (public) */
@@ -50,6 +51,11 @@ export async function updatePaymentNote(
     method: "PATCH",
     body: JSON.stringify({ paymentNote }),
   });
+}
+
+/** Get active payment methods (public) */
+export async function fetchPaymentMethods(): Promise<PaymentMethod[]> {
+  return bffFetch<PaymentMethod[]>("/payment-methods");
 }
 
 /** Upload payment proof image (requires login) */

@@ -23,6 +23,9 @@ export const queryKeys = {
   categories: {
     all: ["categories"] as const,
   },
+  paymentMethods: {
+    all: ["payment-methods"] as const,
+  },
   chat: {
     all: ["chat"] as const,
     conversations: {

@@ -61,3 +61,16 @@ export interface UploadResponse {
   originalSize: number;
   compressedSize: number;
 }
+
+export interface PaymentMethod {
+  id: string;
+  type: "bank_transfer" | "qris";
+  name: string;
+  imageUrl: string;
+  accountNumber: string | null;
+  accountName: string | null;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}

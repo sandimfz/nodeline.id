@@ -19,12 +19,21 @@ import {
   createCategory,
   deleteCategory,
 } from "./api";
+import {
+  fetchPaymentMethods,
+  createPaymentMethod as createPaymentMethodApi,
+  updatePaymentMethod as updatePaymentMethodApi,
+  deletePaymentMethod as deletePaymentMethodApi,
+  uploadPaymentImage as uploadPaymentImageApi,
+} from "./api";
 import type {
   CreateProductInput,
   UpdateProductInput,
   RestockInput,
   ManualRestockInput,
   ConfirmPaymentInput,
+  CreatePaymentMethodInput,
+  UpdatePaymentMethodInput,
 } from "./types";
 
 /** Get all categories */
@@ -203,6 +212,65 @@ export function useManualAssignStock(orderId: string) {
         queryKey: queryKeys.orders.adminDetail(orderId),
       });
     },
+  });
+}
+
+/** Get all payment methods (admin) */
+export function usePaymentMethods() {
+  return useQuery({
+    queryKey: queryKeys.paymentMethods.all,
+    queryFn: fetchPaymentMethods,
+    staleTime: 30_000,
+  });
+}
+
+/** Create payment method mutation */
+export function useCreatePaymentMethod() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CreatePaymentMethodInput) =>
+      createPaymentMethodApi(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.paymentMethods.all,
+      });
+    },
+  });
+}
+
+/** Update payment method mutation */
+export function useUpdatePaymentMethod() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: UpdatePaymentMethodInput) => {
+      const { id, ...rest } = data;
+      return updatePaymentMethodApi(id, rest);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.paymentMethods.all,
+      });
+    },
+  });
+}
+
+/** Delete payment method mutation */
+export function useDeletePaymentMethod() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deletePaymentMethodApi(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.paymentMethods.all,
+      });
+    },
+  });
+}
+
+/** Upload payment method image */
+export function useUploadPaymentImage() {
+  return useMutation({
+    mutationFn: (file: File) => uploadPaymentImageApi(file),
   });
 }
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { IconShoppingCart, IconUser, IconLogout, IconPackage } from "@tabler/icons-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -153,6 +153,9 @@ export function Header() {
               <DropdownMenu>
                 <DropdownMenuTrigger className="flex items-center gap-2 rounded-lg p-1 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40">
                   <Avatar className="size-8 border">
+                    {user.avatarUrl ? (
+                      <AvatarImage src={user.avatarUrl} alt={user.name} />
+                    ) : null}
                     <AvatarFallback className="text-xs">
                       {user.name
                         .split(" ")

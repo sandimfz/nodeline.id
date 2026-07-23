@@ -9,3 +9,4 @@ export * from './audit-logs.schema.js';
 export * from './categories.schema.js';
 export * from './conversations.schema.js';
 export * from './messages.schema.js';
+export * from './payment-methods.schema.js';

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Patch,
@@ -121,6 +122,14 @@ export class AuthController {
   ) {
     // ValidationPipe with forbidNonWhitelisted already rejects extra fields
     const updated = await this.auth.updateUser(user.id, dto);
+    return updated;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('me/avatar')
+  @HttpCode(HttpStatus.OK)
+  async deleteAvatar(@CurrentUser() user: { id: string }) {
+    const updated = await this.auth.updateAvatar(user.id, null);
     return updated;
   }
 
