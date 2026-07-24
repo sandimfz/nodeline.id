@@ -123,6 +123,11 @@ export interface ConfirmPaymentInput {
   orderId: string;
 }
 
+export interface CancelOrderResponse {
+  status: "CANCELLED" | "REFUNDED";
+  reason?: string;
+}
+
 export interface RestockInput {
   content: string;
 }

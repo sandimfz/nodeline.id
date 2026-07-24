@@ -10,6 +10,11 @@ import { DrizzleModule } from './database/drizzle/drizzle.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { MarketplaceModule } from './modules/marketplace/marketplace.module.js';
 import { ChatModule } from './modules/chat/chat.module.js';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { MarketDataModule } from './modules/market-data/market-data.module.js';
+import { ApiKeysModule } from './modules/api-keys/api-keys.module.js';
+import { PublicApiModule } from './modules/public-api/public-api.module.js';
+import { UsageModule } from './modules/usage/usage.module.js';
 
 @Module({
   imports: [
@@ -32,10 +37,15 @@ import { ChatModule } from './modules/chat/chat.module.js';
     ThrottlerModule.forRoot([
       { ttl: 60_000, limit: 100 }, // default ceiling for non-throttled routes
     ]),
+    EventEmitterModule.forRoot(),
     DrizzleModule,
     AuthModule,
     MarketplaceModule,
     ChatModule,
+    MarketDataModule,
+    ApiKeysModule,
+    PublicApiModule,
+    UsageModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

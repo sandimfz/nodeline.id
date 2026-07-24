@@ -79,16 +79,16 @@ bun run lint     # ESLint
 
 | Route | Deskripsi | Status |
 |---|---|---|
-| `/` | Landing page | ✅ |
-| `/auth/login` | Login | ✅ |
-| `/auth/register` | Register | ✅ |
-| `/dashboard` | Dashboard user | ✅ |
-| `/dashboard/profile` | Profil user | ✅ |
-| `/marketplace` | Katalog produk | ✅ |
-| `/marketplace/[id]` | Detail produk + beli | ✅ |
-| `/checkout?product=[id]` | Checkout + upload bukti bayar | ✅ |
-| `/orders` | Riwayat pesanan | ✅ |
-| `/orders/[id]` | Detail pesanan + viewer konten | ✅ |
+| `/` | Landing page | Selesai |
+| `/auth/login` | Login | Selesai |
+| `/auth/register` | Register | Selesai |
+| `/dashboard` | Dashboard user | Selesai |
+| `/dashboard/profile` | Profil user | Selesai |
+| `/marketplace` | Katalog produk | Selesai |
+| `/marketplace/[id]` | Detail produk + beli | Selesai |
+| `/checkout?product=[id]` | Checkout + upload bukti bayar | Selesai |
+| `/orders` | Riwayat pesanan | Selesai |
+| `/orders/[id]` | Detail pesanan + viewer konten | Selesai |
 
 ### Fitur Marketplace (Client)
 

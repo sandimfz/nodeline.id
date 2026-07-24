@@ -17,6 +17,11 @@ export const queryKeys = {
       detail: (id: string) => ["marketplace", "orders", id] as const,
     },
   },
+  apiKeys: {
+    all: ["api-keys"] as const,
+    list: ["api-keys", "list"] as const,
+    usage: (id: string) => ["api-keys", "usage", id] as const,
+  },
   chat: {
     all: ["chat"] as const,
     conversations: {

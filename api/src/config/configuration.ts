@@ -48,4 +48,13 @@ export default () => ({
     publicUrl: process.env.R2_PUBLIC_URL,
     uploadExpiresIn: Number(process.env.R2_UPLOAD_EXPIRES_IN ?? 600),
   },
+
+  marketData: {
+    tradingviewWsUrl:
+      process.env.TRADINGVIEW_WS_URL ??
+      'wss://data.tradingview.com/socket.io/websocket',
+    tradingviewScannerUrl:
+      process.env.TRADINGVIEW_SCANNER_URL ??
+      'https://scanner.tradingview.com/forex/scan',
+  },
 });

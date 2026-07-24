@@ -42,11 +42,12 @@ Nodeline.id adalah platform marketplace untuk produk digital. Sistem ini terdiri
 | Storage | Cloudflare R2 (S3-compatible) |
 | Auth | Passport JWT + Argon2 |
 | Encryption | AES-256-GCM (stock content) |
-| Package Manager | pnpm (workspace) |
+| Package Manager (API) | pnpm |
+| Package Manager (Client & Admin) | bun |
 
 ## Konvensi Project
 
 - Bahasa code: TypeScript (strict mode)
 - Bahasa UI/teks: Bahasa Indonesia
 - Format kode: Prettier + ESLint
-- Package manager: pnpm (workspace monorepo)
+- Package manager: pnpm (API Backend), bun (Client & Admin)

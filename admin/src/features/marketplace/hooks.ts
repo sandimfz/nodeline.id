@@ -35,6 +35,9 @@ import type {
   CreatePaymentMethodInput,
   UpdatePaymentMethodInput,
 } from "./types";
+import {
+  cancelOrder as cancelOrderApi,
+} from "./api";
 
 /** Get all categories */
 export function useCategories() {
@@ -271,6 +274,18 @@ export function useDeletePaymentMethod() {
 export function useUploadPaymentImage() {
   return useMutation({
     mutationFn: (file: File) => uploadPaymentImageApi(file),
+  });
+}
+
+/** Cancel/refund order mutation */
+export function useCancelOrder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { id: string; reason?: string }) =>
+      cancelOrderApi(params.id, params.reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
+    },
   });
 }
 

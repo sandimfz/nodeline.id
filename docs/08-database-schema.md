@@ -125,6 +125,7 @@ payment_methods (standalone)
 | status | order_status enum | NOT NULL, default 'PENDING_PAYMENT_CONFIRMATION' | Lihat enum di bawah |
 | total_cents | integer | NOT NULL | |
 | payment_note | text | nullable | Catatan pembayaran + [BUKTI BAYAR] URL |
+| cancellation_note | text | nullable | Alasan cancel/refund dari admin |
 | created_at | timestamp | NOT NULL, defaultNow() | |
 | updated_at | timestamp | NOT NULL, defaultNow() | |
 
@@ -132,12 +133,12 @@ payment_methods (standalone)
 
 **Status Flow:**
 ```
-PENDING_PAYMENT_CONFIRMATION
-  → (admin confirm payment) → PAID_PENDING_FULFILLMENT
-  → (auto-fulfill) → FULFILLED
-  → (refund request) → REFUND_REQUESTED → REFUNDED
-  → (cancel) → CANCELLED
+PENDING_PAYMENT_CONFIRMATION  ──(confirm payment)──→  PAID_PENDING_FULFILLMENT ──(auto-fulfill)──→  FULFILLED
+         │                                                      │                                               │
+         └──(admin cancel)──→  CANCELLED                        └──(admin cancel)──→  CANCELLED                 └──(admin refund)──→  REFUNDED
 ```
+
+*Catatan: Status `REFUND_REQUESTED` sudah ada di enum untuk future use (request dari pembeli), namun saat ini admin bisa langsung merefund dari status `FULFILLED` ke `REFUNDED`.*
 
 ---
 
@@ -205,7 +206,7 @@ PENDING_PAYMENT_CONFIRMATION
 |--------|------|-----------|-----------|
 | id | uuid | PK, defaultRandom() | |
 | actor_id | uuid | FK → users(id) | nullable (system action) |
-| action | varchar(64) | NOT NULL | 'RESTOCK', 'CONFIRM_PAYMENT', 'AUTO_FULFILL', 'MANUAL_ASSIGN', 'ADD_UNIT' |
+| action | varchar(64) | NOT NULL | 'RESTOCK', 'CONFIRM_PAYMENT', 'AUTO_FULFILL', 'MANUAL_ASSIGN', 'ADD_UNIT', 'CANCEL', 'REFUND' |
 | entity | varchar(64) | nullable | 'product', 'order', 'order_item' |
 | entity_id | uuid | nullable | |
 | meta | jsonb | nullable | Data tambahan (count, dll.) |

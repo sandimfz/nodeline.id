@@ -86,14 +86,14 @@ describe('AuthService', () => {
 
 ```bash
 cd admin
-pnpm typecheck    # tsc --noEmit
+bun run typecheck    # tsc --noEmit
 ```
 
 ### Linting
 
 ```bash
-pnpm lint         # ESLint
-pnpm format       # Prettier
+bun run lint         # ESLint
+bun run format       # Prettier
 ```
 
 > **Catatan:** Admin panel belum memiliki test unit (tidak ada Jest/playwright setup).
@@ -106,7 +106,7 @@ pnpm format       # Prettier
 
 ```bash
 cd client
-pnpm lint         # ESLint (next lint)
+bun run lint         # ESLint (next lint)
 ```
 
 > **Catatan:** Client belum memiliki test unit/test integration. Perlu ditambahkan jika diperlukan (React Testing Library / Playwright).

@@ -31,11 +31,11 @@ COOKIE_SAMESITE=strict
 cd client
 
 # Build production
-pnpm build
+bun run build
 # Output: .next/
 
 # Run production
-pnpm start
+bun run start
 ```
 
 ### Admin Panel
@@ -44,7 +44,7 @@ pnpm start
 cd admin
 
 # Build production
-pnpm build
+bun run build
 # Output: dist/
 ```
 

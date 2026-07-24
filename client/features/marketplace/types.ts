@@ -28,6 +28,7 @@ export interface Order {
   status: OrderStatus;
   totalCents: number;
   paymentNote: string | null;
+  cancellationNote: string | null;
   createdAt: string;
   updatedAt: string;
 }

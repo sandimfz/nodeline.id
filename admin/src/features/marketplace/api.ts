@@ -14,6 +14,7 @@ import type {
   UploadImageResponse,
   AdminOrder,
   AdminOrderDetail,
+  CancelOrderResponse,
   PaymentMethod,
   CreatePaymentMethodInput,
 } from "./types";
@@ -141,6 +142,18 @@ export async function confirmPayment(
   data: ConfirmPaymentInput,
 ): Promise<PaymentConfirmResponse> {
   const res = await api.post<PaymentConfirmResponse>("/payments/confirm", data);
+  return res.data;
+}
+
+/** Cancel/refund an order — admin only */
+export async function cancelOrder(
+  id: string,
+  reason?: string,
+): Promise<CancelOrderResponse> {
+  const res = await api.post<CancelOrderResponse>(
+    `/orders/admin/${id}/cancel`,
+    reason ? { reason } : undefined,
+  );
   return res.data;
 }
 

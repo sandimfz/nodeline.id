@@ -184,7 +184,7 @@ export class StockService {
     });
     if (!item) throw new NotFoundException('Order item tidak ditemukan');
 
-    // ⛔ Validasi: order harus sudah dibayar (PAID_PENDING_FULFILLMENT)
+    // Validasi: order harus sudah dibayar (PAID_PENDING_FULFILLMENT)
     // Admin wajib konfirmasi payment DULU baru bisa assign stock.
     const [order] = await db
       .select({ status: orders.status })

@@ -16,8 +16,10 @@ import { CategoriesController } from './categories/categories.controller.js';
 import { CategoriesService } from './categories/categories.service.js';
 import { PaymentMethodsController } from './payment-methods/payment-methods.controller.js';
 import { PaymentMethodsService } from './payment-methods/payment-methods.service.js';
+import { ChatModule } from '../chat/chat.module.js';
 
 @Module({
+  imports: [ChatModule],
   controllers: [
     ProductsController,
     ProductsAdminController,

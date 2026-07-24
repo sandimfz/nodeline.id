@@ -30,6 +30,8 @@ export const orders = pgTable('orders', {
   totalCents: integer('total_cents').notNull(),
   // Optional free-text note from buyer (payment proof upload is deferred).
   paymentNote: text('payment_note'),
+  // Reason for cancellation/refund, set by admin.
+  cancellationNote: text('cancellation_note'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });

@@ -5,7 +5,8 @@
 | Requirement | Minimal | Catatan |
 |-------------|---------|---------|
 | Node.js | 20.x | Tested on v22.x |
-| pnpm | 9.x | Package manager |
+| pnpm | 9.x | Package manager (API Backend) |
+| bun | 1.x | Package manager (Client & Admin) |
 | PostgreSQL | 16.x | Database |
 | Cloudflare R2 | - | Untuk image storage (opsional untuk development) |
 
@@ -25,13 +26,13 @@ cd nodeline.id
 cd api && pnpm install
 
 # Client Frontend
-cd ../client && pnpm install
+cd ../client && bun install
 
 # Admin Panel
-cd ../admin && pnpm install
+cd ../admin && bun install
 ```
 
-> **Catatan:** Project ini belum menggunakan pnpm workspace. Setiap app memiliki `node_modules` sendiri.
+> **Catatan:** Project ini belum menggunakan pnpm workspace. Setiap app memiliki `node_modules` sendiri. API Backend menggunakan `pnpm`, sedangkan Client dan Admin menggunakan `bun`.
 
 ### 3. Setup Database
 
@@ -129,7 +130,7 @@ pnpm start:dev
 
 ```bash
 cd client
-pnpm dev
+bun dev
 # Server berjalan di http://localhost:3001
 ```
 
@@ -137,7 +138,7 @@ pnpm dev
 
 ```bash
 cd admin
-pnpm dev
+bun dev
 # Server berjalan di http://localhost:5173
 # Admin panel: http://localhost:5173/{VITE_ADMIN_LOGIN_PATH}/
 ```
@@ -181,18 +182,18 @@ open http://localhost:5173/{VITE_ADMIN_LOGIN_PATH}/
 
 | Script | Deskripsi |
 |--------|-----------|
-| `pnpm dev` | Development server |
-| `pnpm build` | Production build |
-| `pnpm start` | Menjalankan production build |
-| `pnpm lint` | ESLint check |
+| `bun dev` | Development server |
+| `bun run build` | Production build |
+| `bun run start` | Menjalankan production build |
+| `bun run lint` | ESLint check |
 
 ### Admin
 
 | Script | Deskripsi |
 |--------|-----------|
-| `pnpm dev` | Development server |
-| `pnpm build` | Production build (tsc + vite) |
-| `pnpm typecheck` | TypeScript type checking |
-| `pnpm preview` | Preview production build |
-| `pnpm lint` | ESLint check |
-| `pnpm format` | Prettier format |
+| `bun dev` | Development server |
+| `bun run build` | Production build (tsc + vite) |
+| `bun run typecheck` | TypeScript type checking |
+| `bun run preview` | Preview production build |
+| `bun run lint` | ESLint check |
+| `bun run format` | Prettier format |
