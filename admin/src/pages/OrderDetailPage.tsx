@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, ExternalLink, Check, RefreshCw, ImageIcon, Package, User, Calendar } from "lucide-react";
+import { ArrowLeft, ExternalLink, Check, RefreshCw, ImageIcon, Package, User, Calendar, XCircle, ArrowLeftRight, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -15,11 +15,24 @@ import {
   useConfirmPayment,
   useManualAssignStock,
   useStockUnits,
+  useCancelOrder,
 } from "@/features/marketplace/hooks";
 import { ADMIN_BASE } from "@/lib/config";
 import { useState } from "react";
 import { extractApiError } from "@/lib/api-client";
 import { useToast } from "@/lib/toast";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const STATUS_MAP: Record<
   string,
@@ -39,6 +52,16 @@ const STATUS_MAP: Record<
     label: "Selesai",
     variant: "default",
     desc: "Pesanan sudah di-fulfill, pembeli bisa lihat konten",
+  },
+  CANCELLED: {
+    label: "Dibatalkan",
+    variant: "outline",
+    desc: "Pesanan dibatalkan oleh admin sebelum diproses",
+  },
+  REFUNDED: {
+    label: "Refund",
+    variant: "outline",
+    desc: "Pesanan di-refund, stok sudah dikembalikan",
   },
 };
 
@@ -106,7 +129,10 @@ export function OrderDetailPage() {
   const { data: order, isLoading, error } = useAdminOrderDetail(id ?? "");
   const confirmPayment = useConfirmPayment();
   const manualAssign = useManualAssignStock(id ?? "");
+  const cancelOrder = useCancelOrder();
   const toast = useToast();
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
   const [paymentImageError, setPaymentImageError] = useState<Set<number>>(new Set());
 
   if (isLoading) {
@@ -207,6 +233,178 @@ export function OrderDetailPage() {
                 </>
               )}
             </Button>
+          )}
+          {(order.status === "PENDING_PAYMENT_CONFIRMATION" || order.status === "PAID_PENDING_FULFILLMENT") && (
+            <AlertDialog
+              open={cancelDialogOpen}
+              onOpenChange={(open) => {
+                setCancelDialogOpen(open);
+                if (!open) setCancelReason("");
+              }}
+            >
+              <AlertDialogTrigger render={
+                <Button variant="outline" className="border-destructive/50 text-destructive hover:bg-destructive/10">
+                  <XCircle className="mr-1.5 size-4" />
+                  Batalkan Pesanan
+                </Button>
+              } />
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="flex items-center gap-2">
+                    <AlertTriangle className="size-5 text-destructive" />
+                    Batalkan Pesanan?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Pesanan ini akan dibatalkan. {order.status === "PAID_PENDING_FULFILLMENT" ? "Pembeli sudah membayar — pastikan Anda sudah mengatur refund secara manual." : "Pembeli belum membayar."}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+
+                {/* Reason input */}
+                <div className="space-y-2 px-6">
+                  <Label htmlFor="cancel-reason" className="text-sm font-medium">
+                    Alasan Pembatalan
+                  </Label>
+                  <Textarea
+                    id="cancel-reason"
+                    placeholder="Tulis alasan pembatalan untuk dikirim ke pembeli..."
+                    value={cancelReason}
+                    onChange={(e) => setCancelReason(e.target.value)}
+                    className="min-h-[80px] text-sm"
+                    maxLength={4000}
+                  />
+                  <p className="text-right text-xs text-muted-foreground">
+                    {cancelReason.length}/4000
+                  </p>
+                </div>
+
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Tutup</AlertDialogCancel>
+                  <Button
+                    variant="destructive"
+                    disabled={cancelOrder.isPending || !cancelReason.trim()}
+                    onClick={() => {
+                      cancelOrder.mutate(
+                        { id: order.id, reason: cancelReason.trim() },
+                        {
+                          onSuccess: (data) => {
+                            const reasonText = data.reason
+                              ? ` Alasan: "${data.reason}"`
+                              : "";
+                            if (data.status === "REFUNDED") {
+                              toast.success("Pesanan di-refund! Stok sudah dikembalikan." + reasonText);
+                            } else {
+                              toast.success("Pesanan berhasil dibatalkan." + reasonText);
+                            }
+                            setCancelDialogOpen(false);
+                            setCancelReason("");
+                          },
+                          onError: (err: unknown) => {
+                            toast.error(extractApiError(err));
+                          },
+                        },
+                      );
+                    }}
+                  >
+                    {cancelOrder.isPending ? (
+                      <>
+                        <RefreshCw className="mr-1.5 size-4 animate-spin" />
+                        Memproses...
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="mr-1.5 size-4" />
+                        Ya, Batalkan
+                      </>
+                    )}
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+          {order.status === "FULFILLED" && (
+            <AlertDialog
+              open={cancelDialogOpen}
+              onOpenChange={(open) => {
+                setCancelDialogOpen(open);
+                if (!open) setCancelReason("");
+              }}
+            >
+              <AlertDialogTrigger render={
+                <Button variant="outline" className="border-destructive/50 text-destructive hover:bg-destructive/10">
+                  <ArrowLeftRight className="mr-1.5 size-4" />
+                  Refund Pesanan
+                </Button>
+              } />
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="flex items-center gap-2">
+                    <AlertTriangle className="size-5 text-destructive" />
+                    Refund Pesanan?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Semua stok yang sudah di-assign ke pesanan ini akan dikembalikan ke pool. Pembeli akan kehilangan akses ke konten.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+
+                {/* Reason input */}
+                <div className="space-y-2 px-6">
+                  <Label htmlFor="refund-reason" className="text-sm font-medium">
+                    Alasan Refund
+                  </Label>
+                  <Textarea
+                    id="refund-reason"
+                    placeholder="Tulis alasan refund untuk dikirim ke pembeli..."
+                    value={cancelReason}
+                    onChange={(e) => setCancelReason(e.target.value)}
+                    className="min-h-[80px] text-sm"
+                    maxLength={4000}
+                  />
+                  <p className="text-right text-xs text-muted-foreground">
+                    {cancelReason.length}/4000
+                  </p>
+                </div>
+
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Tutup</AlertDialogCancel>
+                  <Button
+                    variant="destructive"
+                    disabled={cancelOrder.isPending || !cancelReason.trim()}
+                    onClick={() => {
+                      cancelOrder.mutate(
+                        { id: order.id, reason: cancelReason.trim() },
+                        {
+                          onSuccess: (data) => {
+                            const reasonText = data.reason
+                              ? ` Alasan: "${data.reason}"`
+                              : "";
+                            toast.success(
+                              "Pesanan di-refund! Stok sudah dikembalikan." + reasonText,
+                            );
+                            setCancelDialogOpen(false);
+                            setCancelReason("");
+                          },
+                          onError: (err: unknown) => {
+                            toast.error(extractApiError(err));
+                          },
+                        },
+                      );
+                    }}
+                  >
+                    {cancelOrder.isPending ? (
+                      <>
+                        <RefreshCw className="mr-1.5 size-4 animate-spin" />
+                        Memproses...
+                      </>
+                    ) : (
+                      <>
+                        <ArrowLeftRight className="mr-1.5 size-4" />
+                        Ya, Refund
+                      </>
+                    )}
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
         </div>
       </div>

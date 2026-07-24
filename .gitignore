@@ -2,3 +2,9 @@
 
 # graphify knowledge graph output
 graphify-out/
+
+graphify-out/*
+
+/.claude
+/.agents
+

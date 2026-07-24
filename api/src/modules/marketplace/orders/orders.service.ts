@@ -16,6 +16,9 @@ import {
 } from '../../../database/drizzle/schema/index.js';
 import type { Order } from '../../../database/drizzle/schema/orders.schema.js';
 import { StockCryptoUtil } from '../../../common/crypto/stock-crypto.util.js';
+import { AuditLogService } from '../audit-logs/audit-logs.service.js';
+import { ChatService } from '../../chat/chat.service.js';
+import { ChatGateway } from '../../chat/chat.gateway.js';
 
 interface CheckoutItem {
   productId: string;
@@ -44,7 +47,153 @@ export class OrdersService {
   constructor(
     private readonly drizzle: DrizzleService,
     private readonly crypto: StockCryptoUtil,
+    private readonly audit: AuditLogService,
+    private readonly chat: ChatService,
+    private readonly chatGateway: ChatGateway,
   ) {}
+
+  /**
+   * Cancel an order by admin.
+   * - PENDING_PAYMENT_CONFIRMATION / PAID_PENDING_FULFILLMENT → CANCELLED (no stock to release)
+   * - FULFILLED → REFUNDED (stock units released back to AVAILABLE, fulfillments deactivated)
+   *
+   * If a reason is provided, sends a message to the buyer's chat conversation
+   * explaining why the order was cancelled before performing the cancellation.
+   */
+  async cancelOrder(
+    orderId: string,
+    actorId: string,
+    reason?: string,
+  ): Promise<{ status: string; reason?: string }> {
+    // Look up the order first to validate and get buyerId
+    const [order] = await this.drizzle.db
+      .select()
+      .from(orders)
+      .where(eq(orders.id, orderId))
+      .limit(1);
+
+    if (!order) throw new NotFoundException('Order tidak ditemukan');
+
+    if (order.status === 'CANCELLED' || order.status === 'REFUNDED') {
+      throw new BadRequestException('Order sudah di-cancel/refund sebelumnya');
+    }
+
+    // If reason is provided, send a message to the buyer via chat
+    // before performing the cancellation so the buyer gets notified
+    if (reason) {
+      const actionType = order.status === 'FULFILLED' ? 'refund' : 'cancel';
+      await this.sendCancelMessage(
+        order.buyerId,
+        actorId,
+        reason,
+        actionType,
+        order.id,
+      );
+    }
+
+    return this.drizzle.transaction(async (tx) => {
+
+      if (order.status === 'FULFILLED') {
+        // Release all stock units back to AVAILABLE
+        const fulfills = await tx
+          .select({ id: fulfillments.id, stockUnitId: fulfillments.stockUnitId })
+          .from(fulfillments)
+          .innerJoin(orderItems, eq(orderItems.id, fulfillments.orderItemId))
+          .where(
+            and(
+              eq(orderItems.orderId, orderId),
+              eq(fulfillments.isActive, true),
+            ),
+          );
+
+        for (const f of fulfills) {
+          await tx
+            .update(fulfillments)
+            .set({ isActive: false })
+            .where(eq(fulfillments.id, f.id));
+
+          await tx
+            .update(stockUnits)
+            .set({ status: 'AVAILABLE', soldAt: null })
+            .where(eq(stockUnits.id, f.stockUnitId));
+        }
+
+        await tx
+          .update(orders)
+          .set({ status: 'REFUNDED', updatedAt: new Date(), cancellationNote: reason ?? null })
+          .where(eq(orders.id, orderId));
+
+        await this.audit.record(tx, {
+          actorId,
+          action: 'REFUND',
+          entity: 'order',
+          entityId: orderId,
+          meta: { reason },
+        });
+
+        return { status: 'REFUNDED', reason };
+      }
+
+      // PENDING_PAYMENT_CONFIRMATION or PAID_PENDING_FULFILLMENT
+      await tx
+        .update(orders)
+        .set({ status: 'CANCELLED', updatedAt: new Date(), cancellationNote: reason ?? null })
+        .where(eq(orders.id, orderId));
+
+      await this.audit.record(tx, {
+        actorId,
+        action: 'CANCEL',
+        entity: 'order',
+        entityId: orderId,
+        meta: { previousStatus: order.status, reason },
+      });
+
+      return { status: 'CANCELLED', reason };
+    });
+  }
+
+  /**
+   * Send a cancellation/refund reason message to the buyer via chat.
+   * Finds or creates an open conversation, saves the message, and broadcasts it.
+   */
+  private async sendCancelMessage(
+    buyerId: string,
+    actorId: string,
+    reason: string,
+    type: 'cancel' | 'refund',
+    orderId: string,
+  ): Promise<void> {
+    try {
+      const conversation = await this.chat.getOrCreateConversation(buyerId);
+
+      const label = type === 'refund' ? 'Pesanan Di-Refund' : 'Pesanan Dibatalkan';
+      const shortId = orderId.slice(0, 8);
+
+      const message = await this.chat.saveMessage({
+        conversationId: conversation.id,
+        senderId: actorId,
+        senderRole: 'god',
+        content: `[${label}] #${shortId}\n\n${reason}`,
+      });
+
+      await this.chatGateway.broadcastNewMessage(conversation.id, {
+        id: message.id,
+        conversationId: message.conversationId,
+        senderId: message.senderId,
+        senderRole: message.senderRole,
+        content: message.content,
+        attachmentUrl: message.attachmentUrl,
+        readAt: message.readAt,
+        createdAt: message.createdAt,
+      });
+    } catch (err) {
+      // Jangan sampai gagal kirim pesan menggagalkan cancel order
+      console.error(
+        `[Orders] Gagal kirim pesan cancel ke buyer ${buyerId}:`,
+        err,
+      );
+    }
+  }
 
   /**
    * Create an order. No stock is touched here — units are only assigned after

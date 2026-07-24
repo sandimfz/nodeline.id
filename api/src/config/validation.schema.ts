@@ -38,6 +38,10 @@ export const envValidationSchema = z.object({
     .default(false),
   COOKIE_SAMESITE: z.enum(['strict', 'lax', 'none']).default('strict'),
 
+  // Market Data
+  TRADINGVIEW_WS_URL: z.string().default('wss://data.tradingview.com/socket.io/websocket'),
+  TRADINGVIEW_SCANNER_URL: z.string().default('https://scanner.tradingview.com/forex/scan'),
+
   R2_ACCESS_KEY_ID: z.string().default(''),
   R2_SECRET_ACCESS_KEY: z.string().default(''),
   R2_BUCKET_NAME: z.string().default('nodeline-images'),

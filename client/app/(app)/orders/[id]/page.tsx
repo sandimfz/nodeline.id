@@ -243,6 +243,20 @@ export default function OrderDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Cancellation note */}
+      {(order.status === "CANCELLED" || order.status === "REFUNDED") && order.cancellationNote && (
+        <Card className="mb-4 border-destructive/20 bg-destructive/5">
+          <CardContent className="p-4">
+            <p className="text-xs font-medium text-destructive mb-1">
+              Alasan {order.status === "REFUNDED" ? "Refund" : "Pembatalan"}:
+            </p>
+            <p className="text-sm text-foreground/80 whitespace-pre-wrap">
+              {order.cancellationNote}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Payment Info */}
       <Card className="mb-4">
         <CardHeader>

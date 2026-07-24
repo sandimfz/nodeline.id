@@ -60,11 +60,15 @@ Project Nodeline.id menggunakan arsitektur **monorepo** dengan tiga aplikasi ter
 ```
 User → Checkout → Order (PENDING_PAYMENT_CONFIRMATION)
                     │
+                    ├── Admin cancel (dengan alasan via chat) → CANCELLED
+                    │
                     ▼
 User upload bukti bayar (opsional) via storage endpoint
                     │
                     ▼
 Admin konfirmasi payment → POST /payments/confirm
+                    │
+                    ├── Admin cancel (dengan alasan via chat) → CANCELLED
                     │
                     ▼
 Order → PAID_PENDING_FULFILLMENT
@@ -72,9 +76,20 @@ Order → PAID_PENDING_FULFILLMENT
     ├── Jika semua item terpenuhi → FULFILLED
     └── Jika stok kurang → tetap PAID_PENDING_FULFILLMENT
                             │
+                            ├── Admin refund (dengan alasan via chat) → REFUNDED (stok dikembalikan)
+                            │
                             ▼
                     Admin restock → auto-fulfill
 ```
+
+**Ringkasan Status Transitions:**
+```
+PENDING_PAYMENT_CONFIRMATION  ──(confirm payment)──→  PAID_PENDING_FULFILLMENT ──(auto-fulfill)──→  FULFILLED
+         │                                                      │                                               │
+         └──(admin cancel + chat)──→  CANCELLED                └──(admin cancel + chat)──→  CANCELLED         └──(admin refund + chat)──→  REFUNDED
+```
+
+**Catatan:** Saat admin melakukan cancel/refund, wajib memberikan alasan yang akan dikirim ke pembeli melalui chat realtime (Socket.IO). Sistem akan mencari percakapan aktif pembeli atau membuatnya baru, lalu mengirim pesan notifikasi sebelum status pesanan diubah.
 
 ### Alur Chat Realtime
 

@@ -43,7 +43,7 @@ ON messages (conversation_id, created_at DESC);
 - [ ] **Multi-instance support:** Pindahkan ticket store dan socket registry ke Redis
 - [ ] **Proper logging:** Ganti `console.log` dengan Pino/Winston structured logging
 - [ ] **Email notifications:** Implementasi email notification (bukan console.log stub) untuk order fulfillment, dll.
-- [ ] **Rate limit key by user:** Saat ini rate limit per-IP, perlu per-user untuk endpoint authenticated
+- [x] **Rate limit key by user:** Rate limit per-user (50 request/hari) sudah diimplementasikan di `UserDailyLimitGuard` untuk market data API
 
 ### Prioritas Sedang
 
@@ -51,7 +51,7 @@ ON messages (conversation_id, created_at DESC);
 - [ ] **Search products:** Belum ada endpoint search/filter produk
 - [ ] **Sort products:** Belum ada sorting (harga, terbaru, dll.)
 - [ ] **Warranty system:** Field `warranty_period_days` dan `max_warranty_claims` sudah ada di schema, tapi belum diimplementasikan
-- [ ] **Refund flow:** Status REFUND_REQUESTED dan REFUNDED sudah ada di enum, tapi belum ada endpoint/logic
+- [x] **Refund flow + Cancel reason:** Admin bisa cancel/refund melalui `POST /orders/admin/:id/cancel` — logic lengkap dengan pengembalian stok. Saat cancel/refund, admin wajib memberikan alasan yang akan dikirim ke pembeli via chat realtime (Socket.IO), dan alasan tersebut juga dicatat di audit log. Response mencakup field `reason` untuk ditampilkan di frontend. Alasan juga disimpan di kolom `cancellationNote` tabel `orders` dan ditampilkan di halaman order pembeli.
 - [ ] **Admin avatar:** Fitur avatar untuk admin (saat ini hanya user)
 - [ ] **Multiple product images:** Saat ini hanya satu `imageUrl` per produk
 - [ ] **Mobile responsive untuk admin panel:** Belum optimal di layar kecil

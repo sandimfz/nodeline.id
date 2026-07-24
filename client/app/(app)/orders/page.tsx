@@ -114,24 +114,32 @@ export default function OrdersPage() {
           {orders.map((order) => (
             <Link key={order.id} href={`/orders/${order.id}`}>
               <Card className="transition-colors hover:bg-muted/50">
-                <CardContent className="flex items-center justify-between p-4">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      <OrderStatusBadge status={order.status} />
-                      <span className="text-xs text-muted-foreground">
-                        {formatDate(order.createdAt)}
-                      </span>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <OrderStatusBadge status={order.status} />
+                        <span className="text-xs text-muted-foreground">
+                          {formatDate(order.createdAt)}
+                        </span>
+                      </div>
+                      <p className="text-sm">
+                        <span className="font-mono text-[10px] text-muted-foreground">
+                          #{order.id.slice(0, 8)}
+                        </span>
+                      </p>
+                      <p className="font-heading font-semibold">
+                        {formatPrice(order.totalCents)}
+                      </p>
                     </div>
-                    <p className="text-sm">
-                      <span className="font-mono text-[10px] text-muted-foreground">
-                        #{order.id.slice(0, 8)}
-                      </span>
-                    </p>
-                    <p className="font-heading font-semibold">
-                      {formatPrice(order.totalCents)}
-                    </p>
+                    <ArrowRight className="size-4 text-muted-foreground shrink-0" />
                   </div>
-                  <ArrowRight className="size-4 text-muted-foreground" />
+                  {/* Cancellation note snippet */}
+                  {(order.status === "CANCELLED" || order.status === "REFUNDED") && order.cancellationNote && (
+                    <p className="mt-2 line-clamp-1 text-xs text-muted-foreground border-t border-border/50 pt-2">
+                      Alasan: {order.cancellationNote}
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             </Link>

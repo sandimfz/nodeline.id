@@ -16,6 +16,7 @@ import { Roles } from '../../auth/decorators/roles.decorator.js';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js';
 import { OrdersService } from './orders.service.js';
 import { CheckoutDto } from './dto/checkout.dto.js';
+import { CancelOrderDto } from './dto/cancel-order.dto.js';
 
 interface AuthedUser {
   id: string;
@@ -77,6 +78,19 @@ export class OrdersController {
     @Param('orderItemId') orderItemId: string,
   ) {
     return this.orders.getDecryptedContentForItem(user.id, id, orderItemId);
+  }
+
+  /** Cancel/refund an order — admin only */
+  @Post('admin/:id/cancel')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('god')
+  @HttpCode(HttpStatus.OK)
+  cancel(
+    @CurrentUser() user: AuthedUser,
+    @Param('id') id: string,
+    @Body() dto: CancelOrderDto,
+  ) {
+    return this.orders.cancelOrder(id, user.id, dto.reason);
   }
 
   @Patch(':id/payment-note')

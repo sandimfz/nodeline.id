@@ -158,7 +158,7 @@ export function SettingsPage() {
             <Separator />
             <div className="flex justify-between">
               <span className="text-muted-foreground">Email Terverifikasi</span>
-              <span>{user?.isEmailVerified ? " Ya" : "❌ Belum"}</span>
+              <span>{user?.isEmailVerified ? "Ya" : "Belum"}</span>
             </div>
             <Separator />
             <div className="pt-2">
