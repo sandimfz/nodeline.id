@@ -22,12 +22,49 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://app.sandimf.dev";
+
 export const metadata: Metadata = {
+  // Required so relative URLs (canonical, OG images) resolve to absolute ones.
+  // Without this, social previews break and AI crawlers may skip images.
+  metadataBase: new URL(SITE_URL),
   title: {
-    template: "Nodeline - %s",
-    default: "Nodeline - Beranda",
+    template: "%s | Nodeline",
+    default: "Nodeline — Satu Platform untuk Semua Kebutuhan",
   },
-  description: "Nodeline semua kebutuhan dalam satu platform.",
+  description:
+    "Marketplace produk digital dan API Directory. Beli produk digital dengan aman, atau gunakan API trading dan data pasar real-time untuk project kamu.",
+  applicationName: "Nodeline",
+  keywords: [
+    "marketplace digital",
+    "produk digital",
+    "api directory",
+    "api trading",
+    "market data api",
+    "forex api",
+  ],
+  authors: [{ name: "Nodeline" }],
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    locale: "id_ID",
+    siteName: "Nodeline",
+    title: "Nodeline — Satu Platform untuk Semua Kebutuhan",
+    description:
+      "Marketplace produk digital dan API Directory. Beli produk digital dengan aman, atau gunakan API trading dan data pasar real-time.",
+    url: "/",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Nodeline — Satu Platform untuk Semua Kebutuhan",
+    description:
+      "Marketplace produk digital dan API Directory untuk kebutuhan project kamu.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true },
+  },
 };
 
 export default async function RootLayout({
@@ -53,7 +90,7 @@ export default async function RootLayout({
 
   return (
     <html
-      lang="en"
+      lang="id"
       className={cn(
         "h-full",
         "antialiased",
