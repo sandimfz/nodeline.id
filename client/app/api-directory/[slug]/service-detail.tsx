@@ -76,7 +76,7 @@ export function ApiServiceDetailPage({ service }: { service: ApiServiceDetail })
 
         {/* Tabs */}
         <Tabs defaultValue="overview">
-          <TabsList>
+          <TabsList variant="line">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="endpoints">Endpoints</TabsTrigger>
             <TabsTrigger value="pricing">Pricing</TabsTrigger>
