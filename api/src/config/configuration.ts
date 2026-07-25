@@ -8,10 +8,7 @@ export default () => ({
   port: Number(process.env.PORT ?? 3000),
 
   cors: {
-    origins: (process.env.CORS_ORIGINS ?? '')
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean),
+    origins: [], // Diambil via config.get('CORS_ORIGINS') — Zod validate sudah transform ke array
   },
 
   database: {

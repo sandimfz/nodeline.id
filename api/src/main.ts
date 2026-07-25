@@ -15,24 +15,18 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
 
   // CORS harus PALING ATAS sebelum middleware lain
-  // ConfigModule validate() transforms CORS_ORIGINS string → array,
-  // tapi hasilnya disimpan di ConfigService, bukan process.env.
-  // config.get('cors.origins') dari configuration.ts load function
-  // config.get('CORS_ORIGINS') dari validated env (sudah jadi array oleh Zod transform)
-  const corsFromConfig = config.get<string[]>('cors.origins');
-  const corsFromEnv = config.get<string[]>('CORS_ORIGINS');
-  const corsOrigins: string[] = corsFromConfig ?? corsFromEnv ?? [];
+  // ConfigModule validate() transforms CORS_ORIGINS string → array via Zod.
+  // Gunakan key 'CORS_ORIGINS' langsung (bukan 'cors.origins' dari configuration.ts
+  // yang baca process.env setelah transform mengosongkannya).
+  const corsOrigins: string[] = config.get<string[]>('CORS_ORIGINS') ?? [];
   logger.log(`CORS origins: ${JSON.stringify(corsOrigins)}`);
-  logger.log(`  cors.origins = ${JSON.stringify(corsFromConfig)}`);
-  logger.log(`  CORS_ORIGINS = ${JSON.stringify(corsFromEnv)}`);
   app.enableCors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (curl, server-to-server, etc.)
       if (!origin) return callback(null, true);
       if (corsOrigins.includes(origin)) {
         return callback(null, origin);
       }
-      logger.warn(`CORS blocked origin: "${origin}" | allowed: ${JSON.stringify(corsOrigins)}`);
+      logger.warn(`CORS blocked origin: "${origin}"`);
       callback(new Error(`Origin ${origin} not allowed by CORS`));
     },
     credentials: true,
