@@ -18,6 +18,10 @@ export function useLogin() {
   return useMutation({
     mutationFn: (data: LoginInput) => loginUser(data),
     onSuccess: (res) => {
+      // Only allow god role to access admin panel
+      if (res.user.role !== "god") {
+        throw new Error("Akses ditolak: hanya admin yang dapat masuk");
+      }
       setSession(res.accessToken, res.refreshToken, res.user);
       queryClient.setQueryData(queryKeys.auth.me, res.user);
       navigate(`${ADMIN_BASE}/dashboard`);

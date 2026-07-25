@@ -128,7 +128,7 @@ export class AuthService {
     });
   }
 
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto, requiredRole?: string) {
     const [user] = await this.drizzle.db
       .select()
       .from(users)
@@ -141,6 +141,11 @@ export class AuthService {
       !(await this.verifyPassword(user.passwordHash, dto.password))
     ) {
       throw new UnauthorizedException('Email atau password salah');
+    }
+
+    // Role gate — for admin login endpoint
+    if (requiredRole && user.role !== requiredRole) {
+      throw new UnauthorizedException('Akses ditolak');
     }
 
     return this.issueTokens({
