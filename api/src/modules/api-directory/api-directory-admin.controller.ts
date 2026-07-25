@@ -1,0 +1,66 @@
+import {
+  Controller,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
+import { ApiDirectoryService } from './api-directory.service.js';
+import {
+  CreateServiceDto,
+  UpdateServiceDto,
+  CreateEndpointDto,
+  CreatePlanDto,
+} from './dto/api-directory.dto.js';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
+import { RolesGuard } from '../auth/guards/roles.guard.js';
+import { Roles } from '../auth/decorators/roles.decorator.js';
+
+/**
+ * Admin-only endpoints for managing API Directory.
+ */
+@Controller('api-services/admin')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('god')
+export class ApiDirectoryAdminController {
+  constructor(private readonly directory: ApiDirectoryService) {}
+
+  /** Create a new API service */
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  async createService(@Body() dto: CreateServiceDto) {
+    return this.directory.createService(dto);
+  }
+
+  /** Update an API service */
+  @Patch(':id')
+  @HttpCode(HttpStatus.OK)
+  async updateService(@Param('id') id: string, @Body() dto: UpdateServiceDto) {
+    return this.directory.updateService(id, dto);
+  }
+
+  /** Delete an API service */
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  async deleteService(@Param('id') id: string) {
+    return this.directory.deleteService(id);
+  }
+
+  /** Add an endpoint to a service */
+  @Post(':id/endpoints')
+  @HttpCode(HttpStatus.CREATED)
+  async createEndpoint(@Param('id') id: string, @Body() dto: CreateEndpointDto) {
+    return this.directory.createEndpoint(id, dto);
+  }
+
+  /** Add a plan to a service */
+  @Post(':id/plans')
+  @HttpCode(HttpStatus.CREATED)
+  async createPlan(@Param('id') id: string, @Body() dto: CreatePlanDto) {
+    return this.directory.createPlan(id, dto);
+  }
+}

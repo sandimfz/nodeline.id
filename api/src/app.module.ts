@@ -16,6 +16,8 @@ import { ApiKeysModule } from './modules/api-keys/api-keys.module.js';
 import { PublicApiModule } from './modules/public-api/public-api.module.js';
 import { UsageModule } from './modules/usage/usage.module.js';
 
+import { ApiDirectoryModule } from './modules/api-directory/api-directory.module.js';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -46,6 +48,7 @@ import { UsageModule } from './modules/usage/usage.module.js';
     ApiKeysModule,
     PublicApiModule,
     UsageModule,
+    ApiDirectoryModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
