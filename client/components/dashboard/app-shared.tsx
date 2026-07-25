@@ -1,8 +1,6 @@
 import type { ReactNode } from "react";
 import {
   IconLayoutGrid,
-  IconShoppingCart,
-  IconWallet,
   IconKey,
   IconUsers,
   IconSettings,
@@ -45,14 +43,14 @@ export const navGroups: SidebarNavGroup[] = [
         icon: <IconPackage />,
       },
       {
+        title: "API",
+        path: "/api-directory",
+        icon: <IconActivity />,
+      },
+      {
         title: "Pesanan",
         path: "/orders",
         icon: <IconFileDescription />,
-      },
-      {
-        title: "Keranjang",
-        path: "/marketplace/cart",
-        icon: <IconShoppingCart />,
       },
     ],
   },
@@ -73,11 +71,6 @@ export const navGroups: SidebarNavGroup[] = [
         title: "Profil",
         path: "/dashboard/profile",
         icon: <IconUsers />,
-      },
-      {
-        title: "Wallet",
-        path: "/wallet",
-        icon: <IconWallet />,
       },
       {
         title: "API Keys",
