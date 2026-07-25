@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   Post,
   Patch,
   Delete,
@@ -28,6 +29,13 @@ import { Roles } from '../auth/decorators/roles.decorator.js';
 @Roles('god')
 export class ApiDirectoryAdminController {
   constructor(private readonly directory: ApiDirectoryService) {}
+
+  /** List all services including unpublished ones */
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  async listAll() {
+    return this.directory.listAll();
+  }
 
   /** Create a new API service */
   @Post()

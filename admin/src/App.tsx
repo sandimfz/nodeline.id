@@ -14,6 +14,7 @@ import { UsersPage } from "@/pages/UsersPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { PaymentMethodsPage } from "@/pages/PaymentMethodsPage";
 import { CategoriesPage } from "@/pages/CategoriesPage";
+import { ApiServicesPage } from "@/pages/ApiServicesPage";
 import { ChatConversationsPage } from "@/pages/ChatConversationsPage";
 import { ChatConversationDetailPage } from "@/pages/ChatConversationDetailPage";
 import { ForbiddenPage } from "@/pages/ForbiddenPage";
@@ -61,6 +62,7 @@ export function App() {
                 <Route path="dashboard/orders/:id" element={<OrderDetailPage />} />
                 <Route path="dashboard/users" element={<UsersPage />} />
                 <Route path="dashboard/categories" element={<CategoriesPage />} />
+                <Route path="dashboard/api-services" element={<ApiServicesPage />} />
                 <Route path="dashboard/chat" element={<ChatConversationsPage />} />
                 <Route path="dashboard/chat/:id" element={<ChatConversationDetailPage />} />
                   <Route path="dashboard/payment-methods" element={<PaymentMethodsPage />} />

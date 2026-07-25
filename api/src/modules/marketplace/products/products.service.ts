@@ -147,24 +147,16 @@ export class ProductsService {
           : asc(products.createdAt),
     };
     const orderBy = orderMap[sortBy] ?? desc(products.createdAt);
-
-    // Count total matching products
-    const [countResult] = await this.drizzle.db
-      .select({ count: sql<number>`count(distinct ${products.id})::int` })
-      .from(products)
-      .leftJoin(categories, eq(categories.id, products.categoryId))
-      .where(and(...conditions));
-
-    const total = countResult?.count ?? 0;
-    const totalPages = Math.max(1, Math.ceil(total / limit));
     const offset = (page - 1) * limit;
 
-    // Fetch paginated results
+    // Single round-trip: a window function carries the total count alongside
+    // each row, so we don't pay a second DB round-trip just to count.
     const rows = await this.drizzle.db
       .select({
         product: products,
         categoryName: categories.name,
         availableCount: sql<number>`count(case when ${stockUnits.status} = 'AVAILABLE' then 1 end)::int`,
+        total: sql<number>`count(*) over()::int`,
       })
       .from(products)
       .leftJoin(
@@ -177,6 +169,11 @@ export class ProductsService {
       .orderBy(orderBy)
       .limit(limit)
       .offset(offset);
+
+    // `count(*) over()` counts the grouped rows, which equals the number of
+    // matching products. Empty result set means zero matches.
+    const total = rows[0]?.total ?? 0;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
 
     return {
       products: rows.map((r) =>
