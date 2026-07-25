@@ -17,11 +17,12 @@ const SESSION_COOKIE = process.env.SESSION_COOKIE_NAME ?? "nl_session";
 const REFRESH_COOKIE = "nl_refresh";
 
 // Paths that return auth tokens in the response
-const AUTH_PATHS = new Set(["/auth/login", "/auth/register", "/auth/refresh"]);
+const AUTH_PATHS = new Set(["/auth/login", "/auth/register", "/auth/refresh", "/auth/oauth/google", "/auth/oauth/google/callback", "/auth/oauth/github", "/auth/oauth/github/callback"]);
 
 async function handler(request: NextMethodRequest) {
   const path = getPath(request);
-  const url = `${API_BASE}${path}`;
+  const queryString = new URL(request.url).search; // preserve ?code=xxx etc.
+  const url = `${API_BASE}${path}${queryString}`;
   const method = request.method;
 
   // Build fetch headers for the NestJS backend
