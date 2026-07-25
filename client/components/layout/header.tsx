@@ -15,12 +15,14 @@ import {
 import { ThemeSwitcher } from "./theme";
 import { useAuthStore } from "@/stores/auth-store";
 import { useLogout } from "@/features/auth/hooks";
+import { useRoutePrefetch } from "@/lib/use-route-prefetch";
 import Image from "next/image";
 
 export function Header() {
   const user = useAuthStore((s) => s.user);
   const _hydrated = useAuthStore((s) => s._hydrated);
   const logout = useLogout();
+  const prefetchRoute = useRoutePrefetch();
 
   const isLoggedIn = !!user;
   // Selama belum hydrated, jangan render tombol auth apapun
@@ -46,12 +48,16 @@ export function Header() {
             <Link
               href="/marketplace"
               className="px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              onMouseEnter={() => prefetchRoute("/marketplace")}
+              onFocus={() => prefetchRoute("/marketplace")}
             >
               Marketplace
             </Link>
             <Link
               href="/api-directory"
               className="px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              onMouseEnter={() => prefetchRoute("/api-directory")}
+              onFocus={() => prefetchRoute("/api-directory")}
             >
               API
             </Link>
@@ -121,11 +127,17 @@ export function Header() {
                       <IconLayoutGrid className="size-4" />
                       Dashboard
                     </DropdownMenuItem>
-                    <DropdownMenuItem render={<Link href="/dashboard/profile" />}>
+                    <DropdownMenuItem
+                      render={<Link href="/dashboard/profile" />}
+                      onMouseEnter={() => prefetchRoute("/dashboard/profile")}
+                    >
                       <IconUser className="size-4" />
                       Profil
                     </DropdownMenuItem>
-                    <DropdownMenuItem render={<Link href="/orders" />}>
+                    <DropdownMenuItem
+                      render={<Link href="/orders" />}
+                      onMouseEnter={() => prefetchRoute("/orders")}
+                    >
                       <IconPackage className="size-4" />
                       Pesanan
                     </DropdownMenuItem>

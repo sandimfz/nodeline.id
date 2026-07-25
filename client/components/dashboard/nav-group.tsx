@@ -19,9 +19,11 @@ import {
 } from "@/components/ui/sidebar";
 import type { SidebarNavGroup } from "@/components/dashboard/app-shared";
 import { IconChevronRight } from "@tabler/icons-react";
+import { useRoutePrefetch } from "@/lib/use-route-prefetch";
 
 export function NavGroup({ label, items }: SidebarNavGroup) {
 	const pathname = usePathname();
+	const prefetchRoute = useRoutePrefetch();
 
 	const isActive = (path?: string) => {
 		if (!path) return false;
@@ -60,6 +62,8 @@ export function NavGroup({ label, items }: SidebarNavGroup) {
 													<SidebarMenuSubButton
 														isActive={isActive(subItem.path)}
 														render={subItem.path ? <Link href={subItem.path} /> : undefined}
+														onMouseEnter={() => prefetchRoute(subItem.path)}
+														onFocus={() => prefetchRoute(subItem.path)}
 													>
 														{subItem.icon}
 														<span>{subItem.title}</span>
@@ -73,6 +77,8 @@ export function NavGroup({ label, items }: SidebarNavGroup) {
 								<SidebarMenuButton
 									isActive={itemActive}
 									render={item.path ? <Link href={item.path} /> : undefined}
+									onMouseEnter={() => prefetchRoute(item.path)}
+									onFocus={() => prefetchRoute(item.path)}
 								>
 									{item.icon}
 									<span>{item.title}</span>
