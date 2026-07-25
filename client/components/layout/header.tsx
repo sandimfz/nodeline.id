@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { IconShoppingCart, IconUser, IconLogout, IconPackage, IconLayoutGrid } from "@tabler/icons-react";
+import { IconUser, IconLogout, IconPackage, IconLayoutGrid } from "@tabler/icons-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,25 +14,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   NavigationMenu,
-  NavigationMenuContent,
   NavigationMenuItem,
   NavigationMenuLink,
   NavigationMenuList,
-  NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import { ThemeSwitcher } from "./theme";
 import { useAuthStore } from "@/stores/auth-store";
 import { useLogout } from "@/features/auth/hooks";
 import Image from "next/image";
-
-const categories = [
-  {
-    title: "Template",
-    description: "Template Next.js dan dashboard lengkap.",
-    href: "/marketplace",
-  },
-];
 
 export function Header() {
   const user = useAuthStore((s) => s.user);
@@ -61,42 +51,6 @@ export function Header() {
           <NavigationMenu className="hidden md:flex">
             <NavigationMenuList>
               <NavigationMenuItem>
-                <NavigationMenuTrigger>Kategori</NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-[400px] gap-1 p-2 md:grid-cols-2">
-                    {categories.map((cat) => (
-                      <li key={cat.title}>
-                        <NavigationMenuLink
-                          render={<Link href={cat.href} />}
-                          className="flex flex-col gap-1 rounded-lg p-3 transition-colors hover:bg-muted"
-                        >
-                          <span className="text-sm font-medium">
-                            {cat.title}
-                          </span>
-                          <span className="text-muted-foreground text-xs leading-relaxed">
-                            {cat.description}
-                          </span>
-                        </NavigationMenuLink>
-                      </li>
-                    ))}
-                    <li>
-                      <NavigationMenuLink
-                        render={<Link href="/marketplace" />}
-                        className="flex flex-col gap-1 rounded-lg p-3 transition-colors hover:bg-muted"
-                      >
-                        <span className="text-sm font-medium">
-                          Semua produk
-                        </span>
-                        <span className="text-muted-foreground text-xs leading-relaxed">
-                          Jelajahi seluruh katalog marketplace.
-                        </span>
-                      </NavigationMenuLink>
-                    </li>
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-
-              <NavigationMenuItem>
                 <NavigationMenuLink
                   render={<Link href="/marketplace" />}
                   className={navigationMenuTriggerStyle()}
@@ -109,13 +63,6 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Link
-            href="/marketplace/cart"
-            className="relative inline-flex size-9 items-center justify-center rounded-lg transition-colors hover:bg-muted"
-            aria-label="Keranjang"
-          >
-            <IconShoppingCart className="size-4" />
-          </Link>
 
           {showAuth ? (
             !isLoggedIn ? (
