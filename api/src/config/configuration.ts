@@ -54,4 +54,16 @@ export default () => ({
       process.env.TRADINGVIEW_SCANNER_URL ??
       'https://scanner.tradingview.com/forex/scan',
   },
+
+  oauth: {
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID ?? '',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
+    },
+    github: {
+      clientId: process.env.GITHUB_CLIENT_ID ?? '',
+      clientSecret: process.env.GITHUB_CLIENT_SECRET ?? '',
+    },
+    redirectBase: process.env.OAUTH_REDIRECT_BASE ?? 'http://localhost:3001',
+  },
 });

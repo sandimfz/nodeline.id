@@ -429,10 +429,21 @@ function Heading() {
 }
 
 function OAuthRow() {
+  const handleOAuth = async (provider: "google" | "github") => {
+    try {
+      const res = await fetch(`/api/v1/bff/auth/oauth/${provider}`);
+      if (!res.ok) return;
+      const data = (await res.json()) as { url: string };
+      window.location.href = data.url;
+    } catch {
+      // silently fail — button just won't redirect
+    }
+  };
+
   return (
     <div className="mt-6 grid grid-cols-2 gap-2.5">
-      <OAuthButton icon={<Github />} label="GitHub" />
-      <OAuthButton icon={<GoogleIcon />} label="Google" badge="Last used" />
+      <OAuthButton icon={<Github />} label="GitHub" onClick={() => handleOAuth("github")} />
+      <OAuthButton icon={<GoogleIcon />} label="Google" onClick={() => handleOAuth("google")} />
     </div>
   );
 }
@@ -441,10 +452,12 @@ function OAuthButton({
   icon,
   label,
   badge,
+  onClick,
 }: {
   icon: React.ReactNode;
   label: string;
   badge?: string;
+  onClick?: () => void;
 }) {
   return (
     <div className="relative">
@@ -453,7 +466,7 @@ function OAuthButton({
           {badge}
         </span>
       ) : null}
-      <Button variant="outline" size="lg" className="w-full">
+      <Button variant="outline" size="lg" className="w-full" onClick={onClick}>
         <span className="size-4 shrink-0 [&_svg]:size-4">{icon}</span>
         <span className="truncate whitespace-nowrap">{label}</span>
       </Button>

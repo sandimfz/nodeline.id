@@ -138,6 +138,7 @@ export class AuthService {
     // Generic error — never reveal whether the email exists.
     if (
       !user ||
+      !user.passwordHash ||
       !(await this.verifyPassword(user.passwordHash, dto.password))
     ) {
       throw new UnauthorizedException('Email atau password salah');
@@ -313,6 +314,81 @@ export class AuthService {
           lt(refreshTokens.expiresAt, new Date()),
         ),
       );
+  }
+
+  // ─── OAuth login (find or create user) ─────────────────────
+
+  async oauthLogin(input: {
+    provider: string;
+    providerId: string;
+    email: string;
+    name: string;
+    avatarUrl: string | null;
+  }) {
+    // 1. Try find by oauthProvider + oauthId
+    let [user] = await this.drizzle.db
+      .select()
+      .from(users)
+      .where(
+        and(
+          eq(users.oauthProvider, input.provider),
+          eq(users.oauthId, input.providerId),
+        ),
+      )
+      .limit(1);
+
+    if (!user) {
+      // 2. Try find by email (link existing account)
+      [user] = await this.drizzle.db
+        .select()
+        .from(users)
+        .where(eq(users.email, input.email))
+        .limit(1);
+
+      if (user) {
+        // Link OAuth to existing account
+        await this.drizzle.db
+          .update(users)
+          .set({
+            oauthProvider: input.provider,
+            oauthId: input.providerId,
+            avatarUrl: user.avatarUrl ?? input.avatarUrl,
+            isEmailVerified: true,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.id, user.id));
+      } else {
+        // 3. Create new user
+        [user] = await this.drizzle.db
+          .insert(users)
+          .values({
+            email: input.email,
+            name: input.name,
+            passwordHash: null,
+            oauthProvider: input.provider,
+            oauthId: input.providerId,
+            avatarUrl: input.avatarUrl,
+            isEmailVerified: true,
+          })
+          .returning();
+      }
+    } else {
+      // Update avatar if changed
+      if (input.avatarUrl && input.avatarUrl !== user.avatarUrl) {
+        await this.drizzle.db
+          .update(users)
+          .set({ avatarUrl: input.avatarUrl, updatedAt: new Date() })
+          .where(eq(users.id, user.id));
+      }
+    }
+
+    return this.issueTokens({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+      avatarUrl: user.avatarUrl,
+    });
   }
 
   private async issueTokens(user: {
