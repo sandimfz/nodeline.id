@@ -233,6 +233,128 @@ PENDING_PAYMENT_CONFIRMATION  ──(confirm payment)──→  PAID_PENDING_FUL
 
 ---
 
+## Tabel: `api_services`
+
+Katalog API yang ditampilkan di API Directory.
+
+| Kolom | Tipe | Constraint | Keterangan |
+|-------|------|-----------|------------|
+| id | uuid | PK, defaultRandom() | |
+| slug | varchar(100) | NOT NULL, UNIQUE | Format `^[a-z0-9-]+$` |
+| name | varchar(200) | NOT NULL | |
+| description | text | | Markdown, di-sanitize saat render |
+| short_description | varchar(300) | | Untuk card di listing |
+| category | varchar(50) | NOT NULL | trading, entertainment, utility, dll |
+| base_url | varchar(500) | NOT NULL | Harus endpoint yang di-guard ApiKeyGuard |
+| logo_url | varchar(500) | | |
+| pricing_type | enum | NOT NULL, default 'FREE' | |
+| status | enum | NOT NULL, default 'ACTIVE' | Kontrol on/off dari admin |
+| version | varchar(20) | NOT NULL, default 'v1' | |
+| is_published | boolean | NOT NULL, default false | Kontrol on/off dari admin |
+| sort_order | integer | NOT NULL, default 0 | |
+| created_at | timestamp | NOT NULL, defaultNow() | |
+| updated_at | timestamp | NOT NULL, defaultNow() | |
+
+**Enum:** `api_service_pricing_type` = 'FREE' | 'FREEMIUM' | 'PAID'
+**Enum:** `api_service_status` = 'ACTIVE' | 'MAINTENANCE' | 'DEPRECATED'
+
+`is_published` dan `status` dibaca oleh `ServiceStatusGuard` untuk memblokir endpoint publik saat API dinonaktifkan dari admin.
+
+---
+
+## Tabel: `api_endpoints`
+
+Dokumentasi endpoint per API service.
+
+| Kolom | Tipe | Constraint | Keterangan |
+|-------|------|-----------|------------|
+| id | uuid | PK, defaultRandom() | |
+| service_id | uuid | FK → api_services, CASCADE | |
+| method | varchar(10) | NOT NULL | GET, POST, PUT, PATCH, DELETE |
+| path | varchar(200) | NOT NULL | Contoh: `/prices/:symbol` |
+| summary | varchar(300) | | |
+| description | text | | Markdown |
+| request_example | jsonb | | |
+| response_example | jsonb | | |
+| is_premium | boolean | NOT NULL, default false | Hanya untuk plan berbayar |
+| sort_order | integer | NOT NULL, default 0 | |
+
+---
+
+## Tabel: `api_plans`
+
+Pricing plan per API service.
+
+| Kolom | Tipe | Constraint | Keterangan |
+|-------|------|-----------|------------|
+| id | uuid | PK, defaultRandom() | |
+| service_id | uuid | FK → api_services, CASCADE | |
+| name | varchar(50) | NOT NULL | FREE, PRO, ENTERPRISE |
+| price_cents | integer | NOT NULL, default 0 | Harga per bulan |
+| requests_per_day | integer | NULL = unlimited | Jangan pakai sentinel -1 |
+| requests_per_minute | integer | NOT NULL, default 60 | |
+| features | jsonb | | Array string |
+| is_active | boolean | NOT NULL, default true | |
+| sort_order | integer | NOT NULL, default 0 | |
+
+---
+
+## Tabel: `api_subscriptions`
+
+Menghubungkan API key ke service + plan. Satu key bisa berlangganan banyak service.
+
+| Kolom | Tipe | Constraint | Keterangan |
+|-------|------|-----------|------------|
+| id | uuid | PK, defaultRandom() | |
+| api_key_id | uuid | FK → api_keys, CASCADE | |
+| service_id | uuid | FK → api_services, CASCADE | |
+| plan_id | uuid | FK → api_plans | |
+| status | enum | NOT NULL, default 'ACTIVE' | |
+| quota_used_today | integer | NOT NULL, default 0 | |
+| quota_reset_at | timestamp | | 00:00 UTC berikutnya |
+| created_at | timestamp | NOT NULL, defaultNow() | |
+| updated_at | timestamp | NOT NULL, defaultNow() | |
+| cancelled_at | timestamp | | |
+
+**Enum:** `api_subscription_status` = 'ACTIVE' | 'CANCELLED' | 'SUSPENDED'
+**Unique:** `(api_key_id, service_id)` — satu key hanya bisa punya satu subscription aktif per service
+
+---
+
+## Perubahan pada `users` untuk OAuth
+
+| Kolom | Tipe | Keterangan |
+|-------|------|------------|
+| password_hash | varchar(255) | **Sekarang nullable** — user OAuth tidak punya password |
+| oauth_provider | varchar(20) | 'google' \| 'github' \| NULL |
+| oauth_id | varchar(255) | User ID dari provider |
+
+Login dengan password menolak user yang `password_hash`-nya NULL.
+
+---
+
+## Catatan: Pola Query Paginated
+
+Endpoint paginated **tidak** melakukan query COUNT terpisah. Total dibawa oleh window function dalam query yang sama:
+
+```typescript
+const rows = await db
+  .select({
+    ...fields,
+    total: sql<number>`count(*) over()::int`,
+  })
+  .from(table)
+  .where(and(...conditions))
+  .limit(limit)
+  .offset(offset);
+
+const total = rows[0]?.total ?? 0;
+```
+
+Alasannya: setiap round-trip ke DB ~300ms termasuk network. Dua query = dua kali biaya itu. Lihat [15. Smooth UX Rules](./15-smooth-ux-rules.md) §5.
+
+---
+
 ## Drizzle ORM Configuration
 
 **File:** `drizzle.config.ts` (root project)

@@ -305,6 +305,98 @@ User downgrade PRO → FREE
 | PATCH | `/api-services/admin/:id` | JWT + God | Update API service |
 | DELETE | `/api-services/admin/:id` | JWT + God | Delete API service |
 
+## Status Implementasi
+
+### Sudah selesai (Phase 1)
+
+**Backend:**
+- Schema: `api_services`, `api_endpoints`, `api_plans`, `api_subscriptions`
+- Public endpoints: list (paginated, single-query dengan `count(*) over()`), detail by slug, endpoints, plans
+- Subscribe flow: idempotent, validasi status, one-time key reveal
+- Admin CRUD + `GET /api-services/admin` (melihat service unpublished)
+- `ServiceStatusGuard` — menolak request ke `/market/*` saat service dinonaktifkan dari admin
+- Rate limiting di semua endpoint publik
+
+**Client:**
+- `/api-directory` — card grid dengan prefetch-on-hover ke detail
+- `/api-directory/[slug]` — tabs Overview, Endpoints, Pricing, Docs
+- Prefetch + HydrationBoundary (lihat `15-smooth-ux-rules.md`)
+
+**Admin:**
+- `/dashboard/api-services` — toggle publikasi, ubah status dan pricing type, optimistic UI
+
+**Seed:**
+- `api/scripts/seed-api-directory.ts` — Trading API dengan 3 plan dan 5 endpoint
+
+### Belum dikerjakan
+
+- API playground (server-side execution)
+- Usage dashboard per subscription
+- Plan upgrade via checkout
+- Scopes per service (pengganti `allowed_symbols`)
+- Payment gateway (instant activation)
+
+---
+
+## Kontrol On/Off dari Admin
+
+Toggle di admin bukan sekadar menyembunyikan API dari listing — endpoint publiknya benar-benar ditutup.
+
+`ServiceStatusGuard` (di `PublicApiModule`) membaca `is_published` dan `status` dari `api_services` dengan slug `trading`:
+
+| Kondisi | Response `/api/v1/market/*` |
+|---|---|
+| `is_published: false` | 503 "API sedang dinonaktifkan" |
+| `status: MAINTENANCE` | 503 "API sedang dalam pemeliharaan" |
+| `status: DEPRECATED` | 503 "API sudah tidak didukung" |
+| `status: ACTIVE` + published | Diteruskan ke guard berikutnya |
+
+Detail implementasi:
+- Status di-cache in-memory **30 detik** — tanpa ini setiap request API menambah satu query DB
+- Lookup yang gagal **fail-open** — masalah DB tidak boleh mematikan API
+- Kalau service belum ada di directory, guard membiarkan lewat (API ini ada sebelum directory dibuat)
+
+Guard dipasang **paling awal** dalam chain, sebelum `ApiKeyGuard` — tidak ada gunanya validasi key kalau service-nya memang dimatikan.
+
+---
+
+## Cara Menambah API Baru
+
+### Via seed script
+
+Duplikasi pola di `api/scripts/seed-api-directory.ts`, lalu:
+
+```bash
+cd api && node --import tsx --env-file=.env scripts/seed-api-directory.ts
+```
+
+### Via admin API
+
+```bash
+TOKEN=$(curl -s -X POST https://api.sandimf.dev/api/v1/auth/admin/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"<admin-email>","password":"<password>"}' | jq -r '.accessToken')
+
+curl -X POST https://api.sandimf.dev/api/v1/api-services/admin \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "slug": "movie",
+    "name": "Movie Database API",
+    "shortDescription": "Search movies, TV shows, actors",
+    "category": "entertainment",
+    "baseUrl": "https://api.sandimf.dev/api/v1/public/movie",
+    "pricingType": "FREE",
+    "isPublished": true
+  }'
+```
+
+Lalu tambahkan plans dan endpoints via `POST /api-services/admin/:id/plans` dan `.../endpoints`.
+
+**Catatan:** Kalau API baru butuh guard on/off sendiri, buat guard baru meniru `ServiceStatusGuard` dengan slug yang sesuai — jangan hardcode banyak slug di satu guard.
+
+---
+
 ## Prioritas Implementasi
 
 ### Phase 1 — MVP

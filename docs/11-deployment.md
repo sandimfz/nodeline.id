@@ -172,6 +172,60 @@ server {
 | `VITE_API_URL` | `https://api.sandimf.dev/api/v1` | **Wajib di production!** Full API URL agar request tidak 405 ke static server. Di development (Vite proxy) tidak perlu. |
 | `VITE_API_TARGET` | `https://api.nodeline.id` | Backend URL untuk Vite dev proxy (development only) |
 
+### OAuth (di `/api/.env`)
+
+| Variable | Catatan |
+|----------|---------|
+| `GOOGLE_CLIENT_ID` | Dari Google Cloud Console → Credentials |
+| `GOOGLE_CLIENT_SECRET` | |
+| `GITHUB_CLIENT_ID` | Dari GitHub Settings → Developer settings → OAuth Apps |
+| `GITHUB_CLIENT_SECRET` | |
+| `OAUTH_REDIRECT_BASE` | Origin client, mis. `https://app.sandimf.dev` |
+
+Redirect URI yang harus didaftarkan di provider:
+- Google: `{OAUTH_REDIRECT_BASE}/auth/callback/google`
+- GitHub: `{OAUTH_REDIRECT_BASE}/auth/callback/github`
+
+---
+
+## Deployment Aktual (Saat Ini)
+
+Berbeda dari opsi generik di atas, ini yang benar-benar dipakai:
+
+| Komponen | Di mana | Cara deploy |
+|---|---|---|
+| API | VPS, di-expose via **Cloudflare Tunnel** ke `api.sandimf.dev` | `git pull && pnpm build && pm2 restart api` |
+| Client | **Cloudflare Workers** (`nodeline-client`) | `bunx opennextjs-cloudflare build && bunx wrangler deploy` |
+| Admin | **Cloudflare Workers** (`nodeline-admin`) | `bun run build && bunx wrangler deploy` |
+| Database | **Supabase**, region Asia | — |
+| Storage | Cloudflare R2 | — |
+
+### Reverse proxy di VPS
+
+Memakai **Caddy** (bukan Nginx). Config minimal — jangan tambahkan header CORS di Caddy, biarkan NestJS yang menangani sepenuhnya:
+
+```
+api.sandimf.dev {
+    reverse_proxy localhost:3000
+}
+```
+
+### Catatan penting soal build client
+
+Env dengan prefiks `NEXT_PUBLIC_` di-inline saat **build**, bukan runtime. Jadi `.env.local` harus lengkap sebelum menjalankan build:
+
+```env
+API_BASE_URL=https://api.sandimf.dev/api/v1
+SESSION_COOKIE_NAME=nl_session
+NEXT_PUBLIC_WS_URL=https://api.sandimf.dev
+```
+
+Kalau `NEXT_PUBLIC_WS_URL` lupa di-set, Socket.IO akan mencoba connect ke `ws://localhost:3000` di production.
+
+### Region database
+
+DB **harus** di region yang dekat dengan VPS. Pernah pakai `us-east-1` sementara VPS di Asia — setiap query jadi ~300ms hanya karena network, dan endpoint yang melakukan 2 query jadi ~700ms. Setelah pindah ke region Asia, turun ke ~300ms total.
+
 ---
 
 ## Database Migrations

@@ -59,9 +59,23 @@
 ### Autentikasi
 - Register dengan validasi password kompleks
 - Login dengan JWT access token + refresh token
+- **Login OAuth via Google dan GitHub** (auto-register kalau email belum terdaftar, link account kalau sudah ada)
+- Login admin terpisah (`POST /auth/admin/login`) yang menolak role non-god
 - Token refresh rotation + reuse detection (revoke all sessions)
 - Profile update (nama, avatar)
 - Admin: list semua users
+
+### API Directory
+- Katalog API services yang bisa di-browse publik (`/api-directory`)
+- Detail per API: overview, endpoints, pricing plans, dokumentasi + code examples
+- Subscribe ke plan (FREE otomatis, generate API key sekali tampil)
+- Admin bisa aktif/nonaktifkan API — endpoint publiknya benar-benar ditutup (503), bukan hanya disembunyikan dari listing
+
+### Market Data API (Public API)
+- Data pasar real-time dari TradingView (forex, saham, crypto, komoditas)
+- Endpoint: harga real-time, OHLC candles, market scanner, SSE stream
+- Autentikasi via API key (`X-API-Key` header)
+- Rate limiting + usage tracking per key
 
 ### Chat Realtime
 - WebSocket dengan autentikasi one-time ticket

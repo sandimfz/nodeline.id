@@ -52,13 +52,80 @@ Semua endpoint auth berada di prefix `/api/v1/auth`.
 | Method | Path | Auth | Deskripsi |
 |--------|------|------|-----------|
 | POST | `/auth/register` | Public | Register user baru (rate limit: 5/60s) |
-| POST | `/auth/login` | Public | Login (rate limit: 5/60s) |
+| POST | `/auth/login` | Public | Login untuk semua role (rate limit: 5/60s) |
+| POST | `/auth/admin/login` | Public | Login khusus admin — tolak non-god (rate limit: 5/60s) |
+| GET | `/auth/oauth/google` | Public | Dapatkan Google consent URL |
+| GET | `/auth/oauth/google/callback` | Public | Tukar code, find-or-create user, issue token |
+| GET | `/auth/oauth/github` | Public | Dapatkan GitHub authorize URL |
+| GET | `/auth/oauth/github/callback` | Public | Tukar code, find-or-create user, issue token |
 | POST | `/auth/refresh` | Refresh Token | Refresh access token |
 | POST | `/auth/logout` | JWT | Logout, revoke refresh token |
 | GET | `/auth/me` | JWT | Get current user profile |
 | PATCH | `/auth/me` | JWT | Update profile (name only) |
 | DELETE | `/auth/me/avatar` | JWT | Remove avatar |
 | GET | `/auth/admin/users` | JWT + God | List all users |
+
+---
+
+## OAuth (Google & GitHub)
+
+### Alur
+
+```
+1. Client GET /auth/oauth/{provider}  → { url }
+2. Browser redirect ke url (consent screen provider)
+3. Provider redirect ke {OAUTH_REDIRECT_BASE}/auth/callback/{provider}?code=...
+4. Callback page (client) kirim code ke GET /auth/oauth/{provider}/callback via BFF
+5. Server tukar code → access token provider → ambil profil user
+6. Server find-or-create user, issue JWT + refresh token
+7. BFF set session cookie, client simpan accessToken di Zustand
+```
+
+### Find-or-Create
+
+```
+Cari user by (oauth_provider, oauth_id)
+  ├── Ketemu → pakai user itu, update avatar kalau berubah
+  └── Tidak ketemu → cari by email
+        ├── Ketemu → LINK: set oauth_provider + oauth_id ke user existing,
+        │            set is_email_verified = true
+        └── Tidak ketemu → CREATE user baru:
+                           password_hash = NULL
+                           is_email_verified = true
+                           role = 'user'
+```
+
+**Catatan:** User yang login OAuth dengan email belum terdaftar **otomatis terdaftar**. Tidak perlu register manual dulu.
+
+Setelah account di-link, user bisa login lewat OAuth maupun email+password (kalau sebelumnya punya password).
+
+### Env yang dibutuhkan
+
+```env
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+OAUTH_REDIRECT_BASE=https://app.sandimf.dev
+```
+
+Redirect URI yang harus didaftarkan di provider:
+- Google: `{OAUTH_REDIRECT_BASE}/auth/callback/google`
+- GitHub: `{OAUTH_REDIRECT_BASE}/auth/callback/github`
+
+### Catatan implementasi
+
+- Email GitHub bisa privat — kalau `user.email` null, server fetch `/user/emails` dan ambil yang primary + verified. Kalau tetap tidak ada, request ditolak.
+- `password_hash` sekarang nullable. Login password menolak user yang password_hash-nya NULL (user OAuth-only).
+- BFF **wajib** meneruskan query string (`?code=...`) ke backend. Ini pernah jadi bug: BFF hanya meneruskan pathname sehingga backend selalu menjawab "Missing authorization code".
+
+---
+
+## Login Admin
+
+Admin panel memakai endpoint terpisah `POST /auth/admin/login` yang memvalidasi `role === 'god'` di server. User biasa yang mencoba login di admin panel dapat 401 "Akses ditolak" dan tidak pernah menerima token.
+
+Frontend admin juga mengecek role di `onSuccess` sebagai lapisan kedua (defense-in-depth), tapi penegakan utamanya di server.
 
 ---
 
