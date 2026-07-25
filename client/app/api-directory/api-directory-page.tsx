@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Empty, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
 import { IconApi, IconArrowRight } from "@tabler/icons-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 import type { ApiService, ApiServiceListResult } from "@/features/api-directory/types";
 
@@ -86,10 +86,29 @@ export function ApiDirectoryPage() {
 }
 
 function ServiceCard({ service }: { service: ApiService }) {
+  const queryClient = useQueryClient();
   const emoji = categoryEmoji[service.category] ?? "🔗";
 
+  /** Prefetch detail on hover so navigation feels instant */
+  const prefetchDetail = () => {
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.apiDirectory.detail(service.slug),
+      queryFn: async () => {
+        const res = await fetch(`/api/v1/bff/api-services/${service.slug}`);
+        if (!res.ok) throw new Error("Failed to fetch");
+        return res.json();
+      },
+      staleTime: 60_000,
+    });
+  };
+
   return (
-    <Link href={`/api-directory/${service.slug}`} className="group block">
+    <Link
+      href={`/api-directory/${service.slug}`}
+      className="group block"
+      onMouseEnter={prefetchDetail}
+      onFocus={prefetchDetail}
+    >
       <Card className="h-full overflow-hidden transition-shadow hover:shadow-lg">
         <CardHeader>
           <div className="flex items-start justify-between">

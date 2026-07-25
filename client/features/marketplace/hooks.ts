@@ -42,6 +42,7 @@ export function useOrders() {
   return useQuery({
     queryKey: queryKeys.marketplace.orders.all,
     queryFn: fetchOrders,
+    staleTime: 10_000,
     refetchInterval: 15_000,
   });
 }
