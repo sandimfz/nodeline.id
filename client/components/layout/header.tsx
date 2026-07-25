@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { IconShoppingCart, IconUser, IconLogout, IconPackage } from "@tabler/icons-react";
+import { IconShoppingCart, IconUser, IconLogout, IconPackage, IconLayoutGrid } from "@tabler/icons-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -104,24 +104,6 @@ export function Header() {
                   Marketplace
                 </NavigationMenuLink>
               </NavigationMenuItem>
-
-              <NavigationMenuItem>
-                <NavigationMenuLink
-                  render={<Link href="/marketplace" />}
-                  className={navigationMenuTriggerStyle()}
-                >
-                  Harga
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-
-              <NavigationMenuItem>
-                <NavigationMenuLink
-                  render={<Link href="/marketplace" />}
-                  className={navigationMenuTriggerStyle()}
-                >
-                  Tentang
-                </NavigationMenuLink>
-              </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
         </div>
@@ -166,40 +148,64 @@ export function Header() {
                     </AvatarFallback>
                   </Avatar>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-70 rounded-xl p-3" align="end">
-                  <div className="p-2">
-                    <p className="font-semibold">{user.name}</p>
-                    <p className="text-muted-foreground text-sm truncate">
-                      {user.email}
-                    </p>
-                  </div>
-                  <DropdownMenuSeparator className="-mx-3" />
+                <DropdownMenuContent className="w-60" align="end">
                   <DropdownMenuGroup>
-                    <DropdownMenuItem>
-                    <Link href="/dashboard/profile" className="flex w-full items-center gap-2 py-3">
+                    <div className="flex items-center gap-3 px-2 py-2.5">
+                      <Avatar className="size-10 border">
+                        {user.avatarUrl ? (
+                          <AvatarImage src={user.avatarUrl} alt={user.name} />
+                        ) : null}
+                        <AvatarFallback>
+                          {user.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .toUpperCase()
+                            .slice(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">{user.name}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {user.email}
+                        </p>
+                      </div>
+                    </div>
+                  </DropdownMenuGroup>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem render={<Link href="/dashboard" />}>
+                      <IconLayoutGrid className="size-4" />
+                      Dashboard
+                    </DropdownMenuItem>
+                    <DropdownMenuItem render={<Link href="/dashboard/profile" />}>
                       <IconUser className="size-4" />
                       Profil
-                    </Link>
-                  </DropdownMenuItem>
-                    <DropdownMenuItem>
-                    <Link href="/orders" className="flex w-full items-center gap-2 py-3">
+                    </DropdownMenuItem>
+                    <DropdownMenuItem render={<Link href="/orders" />}>
                       <IconPackage className="size-4" />
                       Pesanan
-                    </Link>
-                  </DropdownMenuItem>
-                    <DropdownMenuItem className="justify-between py-3">
-                      Theme <ThemeSwitcher />
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
-                  <DropdownMenuSeparator className="-mx-3" />
-                  <DropdownMenuItem
-                    className="flex items-center gap-2 py-3 text-destructive focus:text-destructive"
-                    onClick={() => logout.mutate()}
-                    disabled={logout.isPending}
-                  >
-                    <IconLogout className="size-4" />
-                    {logout.isPending ? "Logging out..." : "Logout"}
-                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem className="justify-between">
+                      Theme
+                      <ThemeSwitcher />
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem
+                      variant="destructive"
+                      className="cursor-pointer"
+                      onClick={() => logout.mutate()}
+                      disabled={logout.isPending}
+                    >
+                      <IconLogout className="size-4" />
+                      {logout.isPending ? "Logging out..." : "Logout"}
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
                 </DropdownMenuContent>
               </DropdownMenu>
             )
