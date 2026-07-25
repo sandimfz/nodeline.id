@@ -67,6 +67,7 @@ export async function fetchProductsServer(options?: {
     isActive: boolean;
     imageUrl: string | null;
     stockStatus: "AVAILABLE" | "OUT_OF_STOCK";
+    stockCount: number;
     categoryName: string | null;
     createdAt: string;
     updatedAt: string;
@@ -110,6 +111,7 @@ export async function fetchProductServer(
   isActive: boolean;
   imageUrl: string | null;
   stockStatus: "AVAILABLE" | "OUT_OF_STOCK";
+  stockCount: number;
   categoryName: string | null;
   createdAt: string;
   updatedAt: string;

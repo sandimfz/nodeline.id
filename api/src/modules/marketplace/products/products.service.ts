@@ -15,6 +15,7 @@ export type StockStatus = 'AVAILABLE' | 'OUT_OF_STOCK';
 
 export interface ProductView extends Product {
   stockStatus: StockStatus;
+  stockCount: number;
   categoryName: string | null;
 }
 
@@ -265,6 +266,7 @@ export class ProductsService {
     return {
       ...product,
       stockStatus: availableCount > 0 ? 'AVAILABLE' : 'OUT_OF_STOCK',
+      stockCount: availableCount,
       categoryName,
     };
   }

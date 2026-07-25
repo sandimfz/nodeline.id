@@ -122,6 +122,16 @@ function ProductCard({ product }: { product: Product }) {
           </Badge>
         )}
 
+        {/* Stock count badge */}
+        {isAvailable && (
+          <Badge
+            variant="secondary"
+            className="absolute top-3 right-3 font-mono text-[10px] tracking-wider"
+          >
+            Stok: {product.stockCount}
+          </Badge>
+        )}
+
 
       </div>
 
