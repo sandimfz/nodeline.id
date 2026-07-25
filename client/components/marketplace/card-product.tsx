@@ -12,7 +12,7 @@ import {
   CardPanel,
   CardTitle,
 } from "@/components/ui/card";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 import type { Product } from "@/features/marketplace/types";
 
@@ -84,11 +84,30 @@ export function CardProductShowcasePage() {
 }
 
 function ProductCard({ product }: { product: Product }) {
+  const queryClient = useQueryClient();
   const { hueA, hueB } = huesFromId(product.id);
   const isAvailable = product.stockStatus === "AVAILABLE" && product.isActive;
 
+  /** Prefetch detail on hover so navigation feels instant */
+  const prefetchDetail = () => {
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.marketplace.products.detail(product.id),
+      queryFn: async () => {
+        const res = await fetch(`/api/v1/bff/products/${product.id}`);
+        if (!res.ok) throw new Error("Failed to fetch");
+        return res.json();
+      },
+      staleTime: 60_000,
+    });
+  };
+
   return (
-    <Link href={`/marketplace/${product.id}`} className="group block">
+    <Link
+      href={`/marketplace/${product.id}`}
+      className="group block"
+      onMouseEnter={prefetchDetail}
+      onFocus={prefetchDetail}
+    >
     <Card className="overflow-hidden transition-shadow hover:shadow-lg">
       {/* Image / Gradient area */}
       <div
