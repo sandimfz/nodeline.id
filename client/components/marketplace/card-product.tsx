@@ -12,6 +12,8 @@ import {
   CardPanel,
   CardTitle,
 } from "@/components/ui/card";
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
 import type { Product } from "@/features/marketplace/types";
 
 /**
@@ -34,11 +36,19 @@ function formatPrice(cents: number): string {
   return `Rp ${cents.toLocaleString("id-ID")}`;
 }
 
-export function CardProductShowcasePage({
-  products,
-}: {
-  products: Product[];
-}) {
+async function fetchProducts(): Promise<Product[]> {
+  const res = await fetch("/api/v1/bff/products");
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.products ?? data;
+}
+
+export function CardProductShowcasePage() {
+  const { data: products = [] } = useQuery<Product[]>({
+    queryKey: queryKeys.marketplace.products.list(),
+    queryFn: fetchProducts,
+    staleTime: 60_000,
+  });
   return (
     <div className="min-h-svh bg-background px-6 py-12">
       <div className="mx-auto max-w-5xl">

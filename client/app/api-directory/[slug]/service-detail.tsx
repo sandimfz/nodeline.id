@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +30,18 @@ const methodColors: Record<string, string> = {
   DELETE: "bg-red-500/10 text-red-600 border-red-500/20",
 };
 
-export function ApiServiceDetailPage({ service }: { service: ApiServiceDetail }) {
+export function ApiServiceDetailPage({ slug }: { slug: string }) {
+  const { data: service } = useQuery<ApiServiceDetail>({
+    queryKey: queryKeys.apiDirectory.detail(slug),
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/bff/api-services/${slug}`);
+      if (!res.ok) throw new Error("Failed to fetch");
+      return res.json();
+    },
+    staleTime: 60_000,
+  });
+
+  if (!service) return null;
   return (
     <div className="min-h-svh bg-background px-6 py-12">
       <div className="mx-auto max-w-4xl">

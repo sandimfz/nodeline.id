@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/card";
 import { Empty, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
 import { IconApi, IconArrowRight } from "@tabler/icons-react";
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
 import type { ApiService, ApiServiceListResult } from "@/features/api-directory/types";
 
 const pricingBadgeVariant = {
@@ -35,12 +37,18 @@ const categoryEmoji: Record<string, string> = {
   ai: "🤖",
 };
 
-export function ApiDirectoryPage({
-  initialData,
-}: {
-  initialData: ApiServiceListResult;
-}) {
-  const { services } = initialData;
+export function ApiDirectoryPage() {
+  const { data } = useQuery<ApiServiceListResult>({
+    queryKey: queryKeys.apiDirectory.list(),
+    queryFn: async () => {
+      const res = await fetch("/api/v1/bff/api-services?limit=50");
+      if (!res.ok) return { services: [], total: 0, page: 1, limit: 50, totalPages: 1 };
+      return res.json();
+    },
+    staleTime: 60_000,
+  });
+
+  const services = data?.services ?? [];
 
   return (
     <div className="min-h-svh bg-background px-6 py-12">
