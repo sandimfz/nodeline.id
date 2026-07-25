@@ -12,13 +12,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu";
 import { ThemeSwitcher } from "./theme";
 import { useAuthStore } from "@/stores/auth-store";
 import { useLogout } from "@/features/auth/hooks";
@@ -47,28 +40,21 @@ export function Header() {
             />
           </Link>
 
-          {/* Navigation menu */}
-          <NavigationMenu className="hidden md:flex">
-            <NavigationMenuList>
-              <NavigationMenuItem>
-                <NavigationMenuLink
-                  render={<Link href="/marketplace" />}
-                  className={navigationMenuTriggerStyle()}
-                >
-                  Marketplace
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-
-              <NavigationMenuItem>
-                <NavigationMenuLink
-                  render={<Link href="/api-directory" />}
-                  className={navigationMenuTriggerStyle()}
-                >
-                  API
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
+          {/* Navigation links */}
+          <nav className="hidden md:flex items-center gap-1">
+            <Link
+              href="/marketplace"
+              className="px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Marketplace
+            </Link>
+            <Link
+              href="/api-directory"
+              className="px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              API
+            </Link>
+          </nav>
         </div>
 
         <div className="flex items-center gap-2">
