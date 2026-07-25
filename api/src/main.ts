@@ -15,8 +15,13 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
 
   // CORS harus PALING ATAS sebelum middleware lain
-  const corsOrigins = config.get<string[]>('cors.origins') ?? [];
-  logger.log(`CORS origins: ${JSON.stringify(corsOrigins)}`);
+  // Baca langsung dari process.env untuk menghindari issue ConfigService nested get
+  const corsOrigins = (process.env.CORS_ORIGINS ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  logger.log(`CORS origins (raw env): ${JSON.stringify(corsOrigins)}`);
+  logger.log(`CORS_ORIGINS env value: "${process.env.CORS_ORIGINS}"`);
   app.enableCors({
     origin: (origin, callback) => {
       // Allow requests with no origin (curl, server-to-server, etc.)
@@ -24,7 +29,7 @@ async function bootstrap() {
       if (corsOrigins.includes(origin)) {
         return callback(null, origin);
       }
-      logger.warn(`CORS blocked origin: ${origin}`);
+      logger.warn(`CORS blocked origin: "${origin}" | allowed: ${JSON.stringify(corsOrigins)}`);
       callback(new Error(`Origin ${origin} not allowed by CORS`));
     },
     credentials: true,
