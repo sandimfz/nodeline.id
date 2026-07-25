@@ -165,9 +165,65 @@ PublicApiController ──► CandleBuilderService.getCandles() ──► Respon
 
 ## Catatan
 
-- Logging terbatas pada `console.log` — perlu diganti dengan logger terstruktur (Pino/Winston)
-- Belum ada caching layer (Redis) — semua query langsung ke PostgreSQL
+- Logging via Pino (structured logger)
+- Belum ada caching layer di API (Redis) — tapi ada edge cache di BFF untuk endpoint publik (lihat `15-smooth-ux-rules.md` §5)
 - Ticket store dan socket registry in-memory — untuk multi-instance perlu Redis
 - Audit log notification masih `console.log` stub
 - Email notification masih `console.log` stub (lihat `AuditLogService.notify()`)
 - Market Data WebSocket client adalah singleton — untuk multi-instance perlu Redis pub/sub
+
+## Modul API Directory
+
+Katalog API services yang bisa di-browse publik dan di-subscribe user. Lihat [14. API Directory](./14-api-directory.md).
+
+```
+Client (/api-directory)
+    │
+    ▼
+ApiDirectoryController (public, rate limited)
+    ├── GET /api-services              → list published (paginated)
+    ├── GET /api-services/:slug        → detail + endpoints + plans
+    └── POST /api-services/:slug/subscribe → generate/reuse API key + subscription
+
+ApiDirectoryAdminController (JWT + god)
+    ├── GET    /api-services/admin     → list SEMUA termasuk unpublished
+    ├── POST   /api-services/admin     → create service
+    ├── PATCH  /api-services/admin/:id → update (termasuk toggle isPublished/status)
+    └── DELETE /api-services/admin/:id → delete
+```
+
+### Kontrol On/Off dari Admin
+
+Admin panel (`/dashboard/api-services`) bisa mengaktifkan/menonaktifkan API. Ini bukan hanya menyembunyikan dari listing — `ServiceStatusGuard` di `PublicApiModule` menolak request ke endpoint publik:
+
+| Kondisi di admin | Response `/api/v1/market/*` |
+|---|---|
+| `isPublished: false` | 503 "API sedang dinonaktifkan" |
+| `status: MAINTENANCE` | 503 "API sedang dalam pemeliharaan" |
+| `status: DEPRECATED` | 503 "API sudah tidak didukung" |
+| `status: ACTIVE` + published | Normal |
+
+Status di-cache in-memory 30 detik agar tidak menambah query DB per request. Lookup yang gagal fail-open — masalah DB tidak mematikan API.
+
+## Autentikasi OAuth
+
+Selain email/password, tersedia login via Google dan GitHub. Lihat [05. Auth](./05-auth.md).
+
+```
+Client → GET /auth/oauth/{provider}          → { url } (provider consent URL)
+       → redirect ke provider
+       → provider redirect ke /auth/callback/{provider}?code=...
+       → GET /auth/oauth/{provider}/callback → exchange code, find-or-create user, issue tokens
+```
+
+User yang login OAuth dengan email belum terdaftar akan **otomatis dibuat**. Kalau email sudah terdaftar, account di-link (`oauthProvider` + `oauthId` ditambahkan ke user existing).
+
+## Performa & Caching
+
+Keputusan arsitektur terkait kecepatan didokumentasikan terpisah di [15. Smooth UX Rules](./15-smooth-ux-rules.md). Ringkasan:
+
+- **Edge cache di BFF** — endpoint GET publik di-cache di Cloudflare Cache API (60s–5 menit), hanya untuk request tanpa session cookie
+- **Single-query pagination** — `count(*) over()` menggantikan query COUNT terpisah
+- **Prefetch on hover** — nav link dan card memanggil `prefetchQuery` saat hover, sehingga navigasi terasa instan
+- **`refetchOnMount: false`** — revisit halaman render dari cache, tidak refetch
+- **Tidak ada `loading.tsx`** untuk route yang datanya di-handle TanStack Query

@@ -1,5 +1,55 @@
 # 12. Known Issues & TODO
 
+## Sudah Diperbaiki
+
+Dicatat karena bug-bug ini pernah membingungkan dan bisa terulang di project lain.
+
+### CORS gagal walau `CORS_ORIGINS` sudah benar
+
+**Gejala:** Client (Next.js) berjalan normal, admin panel (SPA) selalu kena CORS. Preflight OPTIONS mengembalikan semua header CORS **kecuali** `Access-Control-Allow-Origin`.
+
+**Penyebab:** Zod `.transform()` di `envValidationSchema` mengubah `CORS_ORIGINS` dari string ke array. Hasilnya disimpan di ConfigService, tapi `process.env.CORS_ORIGINS` jadi kosong setelahnya. `configuration.ts` yang membaca `process.env` mendapat string kosong → array kosong → tidak ada origin yang diizinkan.
+
+**Fix:** Baca via `config.get('CORS_ORIGINS')` (nilai hasil validasi), bukan parse ulang dari `process.env`.
+
+**Pelajaran:** Kalau validate function men-transform env, jangan parse ulang env yang sama di tempat lain.
+
+### Candle data tidak tersimpan (error 42P10)
+
+**Gejala:** Log penuh `Failed to persist candle`, error PostgreSQL `42P10 infer_arbiter_indexes`.
+
+**Penyebab:** Tabel `candles` di production dibuat tanpa composite primary key, sehingga `ON CONFLICT (symbol, interval, timestamp)` tidak menemukan unique index yang cocok. `drizzle-kit push` melaporkan "No changes detected" karena kolomnya memang sudah sesuai — hanya constraint-nya yang hilang.
+
+**Fix:** `ALTER TABLE candles ADD CONSTRAINT candles_pkey PRIMARY KEY (symbol, interval, timestamp);`
+
+**Pelajaran:** `drizzle-kit push` tidak selalu mendeteksi constraint yang hilang. Verifikasi dengan `SELECT conname FROM pg_constraint WHERE conrelid = '<table>'::regclass`.
+
+### User biasa bisa login ke admin panel
+
+**Penyebab:** Admin panel memakai `POST /auth/login` yang universal. Semua endpoint admin memang dilindungi `@Roles('god')`, tapi user tetap bisa masuk dashboard dan melihat semua request gagal 403.
+
+**Fix:** Endpoint terpisah `POST /auth/admin/login` yang memvalidasi role di server.
+
+### WebSocket connect ke `ws://localhost:3000` di production
+
+**Penyebab:** `NEXT_PUBLIC_WS_URL` tidak di-set. Karena prefiks `NEXT_PUBLIC_`, nilainya di-inline saat **build**, bukan runtime — jadi harus ada sebelum build.
+
+### BFF membuang query string
+
+**Gejala:** OAuth callback selalu gagal dengan "Missing authorization code".
+
+**Penyebab:** BFF route handler membangun URL backend dari pathname saja, `?code=...` hilang.
+
+**Fix:** Sertakan `new URL(request.url).search` saat meneruskan.
+
+### Skeleton muncul di setiap navigasi
+
+Penyebab dan solusinya cukup panjang, didokumentasikan terpisah di [15. Smooth UX Rules](./15-smooth-ux-rules.md) §1.
+
+Singkatnya: `loading.tsx` + route dynamic + `refetchOnMount: true` = skeleton di setiap soft navigation, tidak peduli cache sudah ada.
+
+---
+
 ## Bug Diketahui
 
 ### 1. Index Missing untuk Chat Messages Pagination
@@ -12,7 +62,7 @@ CREATE INDEX idx_messages_conversation_created
 ON messages (conversation_id, created_at DESC);
 ```
 
-**Status:** Belum diperbaiki. Drizzle tidak support partial index definitions di DDL.
+**Status:** Migrasi `0009_chat_messages_index.sql` sudah ada. Verifikasi sudah ter-apply di production.
 
 ### 2. Payment Method Image Upload Purpose
 
