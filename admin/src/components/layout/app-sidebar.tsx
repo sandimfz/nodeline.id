@@ -8,6 +8,7 @@ import {
   Tags,
   MessageCircle,
   Banknote,
+  Cloud,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ADMIN_BASE } from "@/lib/config";
@@ -18,6 +19,7 @@ const navItems = [
   { to: `${ADMIN_BASE}/dashboard/products`, label: "Produk", icon: Package },
   { to: `${ADMIN_BASE}/dashboard/orders`, label: "Pesanan", icon: ShoppingCart },
   { to: `${ADMIN_BASE}/dashboard/categories`, label: "Kategori", icon: Tags },
+  { to: `${ADMIN_BASE}/dashboard/api-services`, label: "API Services", icon: Cloud },
   { to: `${ADMIN_BASE}/dashboard/users`, label: "Pengguna", icon: Users },
   { to: `${ADMIN_BASE}/dashboard/payment-methods`, label: "Pembayaran", icon: Banknote },
   { to: `${ADMIN_BASE}/dashboard/settings`, label: "Pengaturan", icon: Settings },

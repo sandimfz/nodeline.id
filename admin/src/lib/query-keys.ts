@@ -26,6 +26,9 @@ export const queryKeys = {
   paymentMethods: {
     all: ["payment-methods"] as const,
   },
+  apiServices: {
+    all: ["api-services"] as const,
+  },
   chat: {
     all: ["chat"] as const,
     conversations: {

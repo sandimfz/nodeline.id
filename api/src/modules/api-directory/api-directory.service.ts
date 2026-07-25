@@ -43,24 +43,30 @@ export class ApiDirectoryService {
       conditions.push(ilike(apiServices.name, `%${search}%`));
     }
 
-    const [countResult] = await this.drizzle.db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(apiServices)
-      .where(and(...conditions));
-
-    const total = countResult?.count ?? 0;
-    const totalPages = Math.max(1, Math.ceil(total / limit));
     const offset = (page - 1) * limit;
 
-    const services = await this.drizzle.db
-      .select()
+    // Single round-trip: window function carries the total count per row.
+    const rows = await this.drizzle.db
+      .select({
+        service: apiServices,
+        total: sql<number>`count(*) over()::int`,
+      })
       .from(apiServices)
       .where(and(...conditions))
       .orderBy(asc(apiServices.sortOrder), asc(apiServices.name))
       .limit(limit)
       .offset(offset);
 
-    return { services, total, page, limit, totalPages };
+    const total = rows[0]?.total ?? 0;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+
+    return {
+      services: rows.map((r) => r.service),
+      total,
+      page,
+      limit,
+      totalPages,
+    };
   }
 
   async findBySlug(slug: string) {
@@ -192,6 +198,22 @@ export class ApiDirectoryService {
   }
 
   // ─── Admin CRUD ────────────────────────────────────────────
+
+  /** List every service, including unpublished/inactive ones (admin view). */
+  async listAll() {
+    const services = await this.drizzle.db
+      .select()
+      .from(apiServices)
+      .orderBy(asc(apiServices.sortOrder), asc(apiServices.name));
+
+    return {
+      services,
+      total: services.length,
+      page: 1,
+      limit: services.length,
+      totalPages: 1,
+    };
+  }
 
   async createService(dto: CreateServiceDto) {
     const [existing] = await this.drizzle.db

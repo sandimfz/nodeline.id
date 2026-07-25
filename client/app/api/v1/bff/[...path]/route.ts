@@ -19,11 +19,41 @@ const REFRESH_COOKIE = "nl_refresh";
 // Paths that return auth tokens in the response
 const AUTH_PATHS = new Set(["/auth/login", "/auth/register", "/auth/refresh", "/auth/oauth/google", "/auth/oauth/google/callback", "/auth/oauth/github", "/auth/oauth/github/callback"]);
 
+/**
+ * Public GET endpoints safe to cache at the edge, with their TTL in seconds.
+ * These return the same data for every visitor, so caching removes the
+ * Worker → VPS → DB round-trip (~700ms) for all but the first request.
+ * Matched by prefix so `/products/<id>` inherits `/products`.
+ */
+const CACHEABLE_PREFIXES: Array<{ prefix: string; ttl: number }> = [
+  { prefix: "/api-services", ttl: 60 },
+  { prefix: "/products", ttl: 60 },
+  { prefix: "/categories", ttl: 300 },
+  { prefix: "/payment-methods", ttl: 300 },
+];
+
+function getCacheTtl(path: string): number | null {
+  const match = CACHEABLE_PREFIXES.find((c) => path.startsWith(c.prefix));
+  return match ? match.ttl : null;
+}
+
 async function handler(request: NextMethodRequest) {
   const path = getPath(request);
   const queryString = new URL(request.url).search; // preserve ?code=xxx etc.
   const url = `${API_BASE}${path}${queryString}`;
   const method = request.method;
+
+  // Serve public GET endpoints from the edge cache when possible.
+  // Only for anonymous requests — a session cookie means the response may
+  // be user-specific, so we never serve or store those from a shared cache.
+  const cacheTtl = method === "GET" ? getCacheTtl(path) : null;
+  const hasSession = !!request.cookies.get(SESSION_COOKIE)?.value;
+  const useCache = cacheTtl !== null && !hasSession;
+
+  if (useCache) {
+    const cached = await readEdgeCache(url);
+    if (cached) return cached;
+  }
 
   // Build fetch headers for the NestJS backend
   const headers = new Headers();
@@ -147,6 +177,11 @@ async function handler(request: NextMethodRequest) {
     });
   }
 
+  // Store successful public responses in the edge cache
+  if (useCache && cacheTtl !== null && isSuccess) {
+    await writeEdgeCache(url, responseBody, cacheTtl);
+  }
+
   return response;
 }
 
@@ -160,6 +195,50 @@ export const DELETE = handler;
 // --- Helpers ---
 
 type NextMethodRequest = NextRequest & { method: string };
+
+/**
+ * Cloudflare Workers exposes `caches.default`. On other runtimes (local dev
+ * with Node) it's absent, so these helpers degrade to a no-op.
+ */
+function getEdgeCache(): Cache | null {
+  const store = (globalThis as { caches?: { default?: Cache } }).caches;
+  return store?.default ?? null;
+}
+
+async function readEdgeCache(url: string): Promise<NextResponse | null> {
+  const cache = getEdgeCache();
+  if (!cache) return null;
+  try {
+    const hit = await cache.match(new Request(url));
+    if (!hit) return null;
+    const body: unknown = await hit.json();
+    const res = NextResponse.json(body, { status: 200 });
+    res.headers.set("x-bff-cache", "HIT");
+    return res;
+  } catch {
+    return null;
+  }
+}
+
+async function writeEdgeCache(
+  url: string,
+  body: unknown,
+  ttlSeconds: number,
+): Promise<void> {
+  const cache = getEdgeCache();
+  if (!cache) return;
+  try {
+    const payload = new Response(JSON.stringify(body), {
+      headers: {
+        "content-type": "application/json",
+        "cache-control": `public, max-age=${ttlSeconds}`,
+      },
+    });
+    await cache.put(new Request(url), payload);
+  } catch {
+    // Cache write failures must never break the request
+  }
+}
 
 function getPath(request: NextMethodRequest): string {
   // Extract the path after /api/v1/bff/
