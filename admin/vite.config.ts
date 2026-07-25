@@ -40,7 +40,7 @@ export default defineConfig(({ mode }) => {
   // Load .env vars properly — process.env belum siap saat config dievaluasi
   const env = loadEnv(mode, process.cwd(), "");
   const LOGIN_PATH = env.VITE_ADMIN_LOGIN_PATH || "iasniaguiagsiashas";
-  const API_TARGET = env.API_TARGET || "http://localhost:3000";
+  const API_TARGET = env.VITE_API_TARGET || "http://localhost:3000";
 
   return {
     plugins: [react(), tailwindcss(), forbiddenPlugin(LOGIN_PATH)],

@@ -1,0 +1,19 @@
+{
+  "/(app)/api-keys/page": "/api-keys",
+  "/(app)/dashboard/chat/page": "/dashboard/chat",
+  "/(app)/dashboard/page": "/dashboard",
+  "/(app)/dashboard/profile/page": "/dashboard/profile",
+  "/(app)/orders/[id]/page": "/orders/[id]",
+  "/(app)/orders/page": "/orders",
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/api/chat/ticket/route": "/api/chat/ticket",
+  "/api/v1/bff/[...path]/route": "/api/v1/bff/[...path]",
+  "/auth/login/page": "/auth/login",
+  "/auth/register/page": "/auth/register",
+  "/checkout/page": "/checkout",
+  "/favicon.ico/route": "/favicon.ico",
+  "/marketplace/[id]/page": "/marketplace/[id]",
+  "/marketplace/page": "/marketplace",
+  "/page": "/"
+}

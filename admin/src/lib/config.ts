@@ -9,3 +9,11 @@ export const ADMIN_LOGIN_PATH =
 
 /** Base path for all admin routes — login path + optional prefix */
 export const ADMIN_BASE = `/${ADMIN_LOGIN_PATH}`;
+
+/**
+ * Full API base URL untuk production.
+ * Di development (Vite proxy): undefined → fallback ke "/api"
+ * Di production: set VITE_API_URL=https://api.sandimf.dev/api/v1
+ */
+export const API_URL: string | undefined =
+  import.meta.env.VITE_API_URL || undefined;

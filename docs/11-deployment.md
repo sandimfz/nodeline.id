@@ -169,7 +169,8 @@ server {
 | Variable | Contoh Value | Catatan |
 |----------|-------------|---------|
 | `VITE_ADMIN_LOGIN_PATH` | Random string | Secret path untuk admin |
-| `API_TARGET` | `https://api.nodeline.id` | Backend URL untuk Vite proxy |
+| `VITE_API_URL` | `https://api.sandimf.dev/api/v1` | **Wajib di production!** Full API URL agar request tidak 405 ke static server. Di development (Vite proxy) tidak perlu. |
+| `VITE_API_TARGET` | `https://api.nodeline.id` | Backend URL untuk Vite dev proxy (development only) |
 
 ---
 

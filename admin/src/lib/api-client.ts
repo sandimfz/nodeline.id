@@ -1,6 +1,6 @@
 import axios, { AxiosError, type AxiosRequestConfig } from "axios";
 import type { ApiError } from "@/features/auth/types";
-import { ADMIN_BASE } from "./config";
+import { ADMIN_BASE, API_URL } from "./config";
 
 /**
  * Extract error message from API response.
@@ -32,11 +32,12 @@ interface RequestConfig extends AxiosRequestConfig {
 
 /**
  * Axios instance for admin panel.
- * Base URL points to Vite proxy (/api) which forwards to Nest backend.
+ * - Development: baseURL "/api" → Vite proxy → Nest backend
+ * - Production:  baseURL langsung ke API (VITE_API_URL)
  * Token is stored in localStorage and attached via interceptor.
  */
 const api = axios.create({
-  baseURL: "/api",
+  baseURL: API_URL ?? "/api",
   headers: { "Content-Type": "application/json" },
 });
 

@@ -14,14 +14,19 @@ async function bootstrap() {
   app.useLogger(new PinoLoggerService());
   const logger = new Logger('Bootstrap');
 
+  // CORS harus PALING ATAS sebelum middleware lain
+  const corsOrigins = config.get<string[]>('cors.origins');
+  logger.log(`CORS origins: ${JSON.stringify(corsOrigins)}`);
+  app.enableCors({
+    origin: corsOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  });
+
   app.setGlobalPrefix('api/v1');
   app.use(helmet());
   app.use(cookieParser());
-
-  app.enableCors({
-    origin: config.get<string[]>('cors.origins'),
-    credentials: true,
-  });
 
   app.useGlobalPipes(
     new ValidationPipe({
