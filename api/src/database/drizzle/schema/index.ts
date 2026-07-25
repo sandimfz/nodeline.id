@@ -13,3 +13,7 @@ export * from './payment-methods.schema.js';
 export * from './api-keys.schema.js';
 export * from './api-usage-logs.schema.js';
 export * from './candles.schema.js';
+export * from './api-services.schema.js';
+export * from './api-endpoints.schema.js';
+export * from './api-plans.schema.js';
+export * from './api-subscriptions.schema.js';
