@@ -75,7 +75,7 @@ export function ApiServiceDetailPage({ service }: { service: ApiServiceDetail })
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="overview">
+        <Tabs defaultValue="overview" className="flex flex-col gap-4">
           <TabsList variant="line">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="endpoints">Endpoints</TabsTrigger>
