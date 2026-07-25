@@ -2,10 +2,10 @@ import { IsString, IsIn, MaxLength } from 'class-validator';
 
 export class RequestUploadDto {
   @IsString()
-  @IsIn(['product-image', 'payment-proof'], {
-    message: 'Purpose harus product-image atau payment-proof',
+  @IsIn(['product-image', 'payment-proof', 'payment-method-image'], {
+    message: 'Purpose harus product-image, payment-proof, atau payment-method-image',
   })
-  purpose: 'product-image' | 'payment-proof';
+  purpose: 'product-image' | 'payment-proof' | 'payment-method-image';
 
   @IsString()
   @MaxLength(255)

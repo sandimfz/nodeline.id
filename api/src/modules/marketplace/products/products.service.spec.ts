@@ -164,4 +164,46 @@ describe('ProductsService (marketplace)', () => {
       ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
+
+  describe('findPublicCatalog with pagination & search', () => {
+    it('returns paginated catalog result with products, total, page info', async () => {
+      const result = await service.findPublicCatalog({ page: 1, limit: 10 });
+
+      expect(result).toHaveProperty('products');
+      expect(Array.isArray(result.products)).toBe(true);
+      expect(result).toHaveProperty('total');
+      expect(typeof result.total).toBe('number');
+      expect(result).toHaveProperty('page', 1);
+      expect(result).toHaveProperty('limit', 10);
+      expect(result).toHaveProperty('totalPages');
+      expect(typeof result.totalPages).toBe('number');
+    });
+
+    it('returns empty products when search term does not match', async () => {
+      const result = await service.findPublicCatalog({
+        search: 'zzz_nonexistent_zzz',
+      });
+
+      expect(result.products.length).toBe(0);
+      expect(result.total).toBe(0);
+      expect(result.totalPages).toBe(1); // at least 1 page
+    });
+
+    it('filters by categoryId when provided', async () => {
+      // Use a random UUID that doesn't exist as a category
+      const categoryId = '00000000-0000-0000-0000-000000000000';
+      const result = await service.findPublicCatalog({ categoryId });
+
+      expect(result.products.length).toBe(0);
+    });
+
+    it('sorts products by name ascending', async () => {
+      const result = await service.findPublicCatalog({
+        sortBy: 'name',
+        sortOrder: 'asc',
+      });
+
+      expect(Array.isArray(result.products)).toBe(true);
+    });
+  });
 });

@@ -21,8 +21,9 @@ import type {
 
 /** Get all active products (public catalog) */
 export async function fetchProducts(): Promise<Product[]> {
-  const res = await api.get<Product[]>("/products");
-  return res.data;
+  const res = await api.get<{ products: Product[]; total: number; page: number; limit: number; totalPages: number }>("/products?limit=100");
+  // New paginated format: { products: [...], total, page, limit, totalPages }
+  return res.data.products ?? (res.data as unknown as Product[]);
 }
 
 /** Get single product by id (admin uses public detail) */
@@ -199,7 +200,7 @@ export async function uploadPaymentImage(
 ): Promise<UploadImageResponse> {
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("purpose", "product-image");
+  formData.append("purpose", "payment-method-image");
 
   const res = await api.post<UploadImageResponse>("/storage/upload", formData, {
     headers: { "Content-Type": "multipart/form-data" },

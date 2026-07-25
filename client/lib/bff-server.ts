@@ -47,8 +47,16 @@ export async function fetchMeServer(
 /**
  * Fetch all active products (public) from the NestJS backend.
  * No auth required — this is the public catalog endpoint.
+ * Returns paginated result with products array, total count, page, limit, and totalPages.
  */
-export async function fetchProductsServer(): Promise<
+export async function fetchProductsServer(options?: {
+  search?: string;
+  categoryId?: string;
+  sortBy?: 'name' | 'price' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}): Promise<
   Array<{
     id: string;
     sellerId: string;
@@ -65,11 +73,23 @@ export async function fetchProductsServer(): Promise<
   }>
 > {
   try {
-    const res = await fetch(`${API_BASE}/products`, {
+    const params = new URLSearchParams();
+    if (options?.search) params.set('search', options.search);
+    if (options?.categoryId) params.set('categoryId', options.categoryId);
+    if (options?.sortBy) params.set('sortBy', options.sortBy);
+    if (options?.sortOrder) params.set('sortOrder', options.sortOrder);
+    if (options?.page) params.set('page', String(options.page));
+    if (options?.limit) params.set('limit', String(options.limit));
+
+    const query = params.toString();
+    const url = `${API_BASE}/products${query ? `?${query}` : ''}`;
+    const res = await fetch(url, {
       cache: "no-store",
     });
     if (!res.ok) return [];
-    return res.json();
+    const data = await res.json();
+    // New paginated format: { products: [...], total, page, limit, totalPages }
+    return data.products ?? data;
   } catch {
     return [];
   }

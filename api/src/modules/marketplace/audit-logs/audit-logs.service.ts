@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { and, eq } from 'drizzle-orm';
 import { DrizzleService } from '../../../database/drizzle/drizzle.service.js';
 import { auditLogs } from '../../../database/drizzle/schema/audit-logs.schema.js';
@@ -26,6 +26,8 @@ export interface AuditLogInput {
  */
 @Injectable()
 export class AuditLogService {
+  private readonly logger = new Logger('AuditLogService');
+
   constructor(private readonly drizzle: DrizzleService) {}
 
   async record(tx: DbOrTx | null, input: AuditLogInput): Promise<void> {
@@ -41,7 +43,7 @@ export class AuditLogService {
 
   // Notification stub — mirrors the Auth module's console.log email stub.
   notify(message: string): void {
-    console.log(`[NOTIFY] ${message}`);
+    this.logger.log(`[NOTIFY] ${message}`);
   }
 
   /** Read-side helper used by ops/admins if needed later. */

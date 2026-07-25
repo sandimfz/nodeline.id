@@ -6,6 +6,7 @@ import {
   OnGatewayDisconnect,
   WsException,
 } from '@nestjs/websockets';
+import { Logger } from '@nestjs/common';
 import { Socket, Server } from 'socket.io';
 import { ChatService } from './chat.service.js';
 
@@ -41,6 +42,8 @@ interface AuthenticatedSocket extends Socket {
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;
+
+  private readonly logger = new Logger('ChatGateway');
 
   constructor(private readonly chat: ChatService) {}
 
@@ -79,9 +82,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Register socket
       this.chat.registerSocket(userData.userId, socket.id);
 
-      console.log(
-        `[WS] User ${userData.userId} (${userData.role}) connected — socket ${socket.id}`,
-      );
+      this.logger.log(`User ${userData.userId} (${userData.role}) connected — socket ${socket.id}`);
     } catch (err) {
       socket.disconnect(true);
     }
@@ -96,9 +97,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.cleanupRateLimit(socket.id);
     if (authSocket.data?.userId) {
       this.chat.unregisterSocket(authSocket.data.userId, socket.id);
-      console.log(
-        `[WS] User ${authSocket.data.userId} disconnected — socket ${socket.id}`,
-      );
+      this.logger.log(`User ${authSocket.data.userId} disconnected — socket ${socket.id}`);
     }
   }
 

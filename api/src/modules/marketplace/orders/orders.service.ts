@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { DrizzleService } from '../../../database/drizzle/drizzle.service.js';
@@ -44,6 +45,8 @@ export interface OrderView extends Omit<Order, never> {
  */
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger('OrdersService');
+
   constructor(
     private readonly drizzle: DrizzleService,
     private readonly crypto: StockCryptoUtil,
@@ -188,9 +191,8 @@ export class OrdersService {
       });
     } catch (err) {
       // Jangan sampai gagal kirim pesan menggagalkan cancel order
-      console.error(
-        `[Orders] Gagal kirim pesan cancel ke buyer ${buyerId}:`,
-        err,
+      this.logger.error(
+        `Gagal kirim pesan cancel ke buyer ${buyerId}: ${err}`,
       );
     }
   }

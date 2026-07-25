@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import {
   useMessages,
   useCloseConversation,
+  useChatSocket,
 } from "@/features/chat/hooks";
 import api from "@/lib/api-client";
 
@@ -19,6 +20,9 @@ export function ChatConversationDetailPage() {
   const navigate = useNavigate();
   const { data: messages = [], isLoading } = useMessages(conversationId);
   const { mutate: closeConv, isPending: closing } = useCloseConversation();
+
+  // Connect to WebSocket for real-time messages (replaces polling)
+  useChatSocket(conversationId);
 
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -34,7 +38,7 @@ export function ChatConversationDetailPage() {
     try {
       await api.post(`/chat/conversations/${conversationId}/messages`, { content });
     } catch {
-      // Silent fail — polling will pick up new messages
+      // Silent fail — WebSocket will pick up realtime updates
     } finally {
       setSending(false);
     }
@@ -66,7 +70,7 @@ export function ChatConversationDetailPage() {
           <h2 className="text-sm font-medium">
             User {conversationId?.slice(0, 8)}
           </h2>
-          <p className="text-xs text-muted-foreground">Polling...</p>
+          <p className="text-xs text-muted-foreground">Realtime</p>
         </div>
         <Button
           variant="outline"

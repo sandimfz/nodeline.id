@@ -63,6 +63,14 @@ export interface UploadResponse {
   compressedSize: number;
 }
 
+export interface CatalogResult {
+  products: Product[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export interface PaymentMethod {
   id: string;
   type: "bank_transfer" | "qris";
