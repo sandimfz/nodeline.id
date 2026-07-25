@@ -58,6 +58,15 @@ export function Header() {
                   Marketplace
                 </NavigationMenuLink>
               </NavigationMenuItem>
+
+              <NavigationMenuItem>
+                <NavigationMenuLink
+                  render={<Link href="/api-directory" />}
+                  className={navigationMenuTriggerStyle()}
+                >
+                  API
+                </NavigationMenuLink>
+              </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
         </div>
