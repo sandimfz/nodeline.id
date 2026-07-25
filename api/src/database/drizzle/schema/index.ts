@@ -12,3 +12,4 @@ export * from './messages.schema.js';
 export * from './payment-methods.schema.js';
 export * from './api-keys.schema.js';
 export * from './api-usage-logs.schema.js';
+export * from './candles.schema.js';

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { and, eq, sql, isNotNull, desc } from 'drizzle-orm';
+import { and, eq, sql, isNotNull, desc, asc, ilike } from 'drizzle-orm';
 import { DrizzleService } from '../../../database/drizzle/drizzle.service.js';
 import {
   products,
@@ -16,6 +16,23 @@ export type StockStatus = 'AVAILABLE' | 'OUT_OF_STOCK';
 export interface ProductView extends Product {
   stockStatus: StockStatus;
   categoryName: string | null;
+}
+
+export interface CatalogQuery {
+  search?: string;
+  categoryId?: string;
+  sortBy?: 'name' | 'price' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}
+
+export interface CatalogResult {
+  products: ProductView[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }
 
 /**
@@ -92,8 +109,56 @@ export class ProductsService {
     await this.drizzle.db.delete(products).where(eq(products.id, id));
   }
 
-  /** Public catalog: only active products, each tagged with coarse stock status. */
-  async findPublicCatalog(): Promise<ProductView[]> {
+  /**
+   * Public catalog: only active products, with pagination, search, category filter, and sorting.
+   * Each product tagged with coarse stock status (AVAILABLE / OUT_OF_STOCK).
+   */
+  async findPublicCatalog(query: CatalogQuery = {}): Promise<CatalogResult> {
+    const {
+      search,
+      categoryId,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      page = 1,
+      limit = 20,
+    } = query;
+
+    // Build WHERE conditions
+    const conditions = [eq(products.isActive, true)];
+
+    if (search) {
+      conditions.push(ilike(products.name, `%${search}%`));
+    }
+    if (categoryId) {
+      conditions.push(eq(products.categoryId, categoryId));
+    }
+
+    // Build ORDER BY
+    const orderMap: Record<string, any> = {
+      name: sortOrder === 'desc' ? desc(products.name) : asc(products.name),
+      price:
+        sortOrder === 'desc'
+          ? desc(products.priceCents)
+          : asc(products.priceCents),
+      createdAt:
+        sortOrder === 'desc'
+          ? desc(products.createdAt)
+          : asc(products.createdAt),
+    };
+    const orderBy = orderMap[sortBy] ?? desc(products.createdAt);
+
+    // Count total matching products
+    const [countResult] = await this.drizzle.db
+      .select({ count: sql<number>`count(distinct ${products.id})::int` })
+      .from(products)
+      .leftJoin(categories, eq(categories.id, products.categoryId))
+      .where(and(...conditions));
+
+    const total = countResult?.count ?? 0;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const offset = (page - 1) * limit;
+
+    // Fetch paginated results
     const rows = await this.drizzle.db
       .select({
         product: products,
@@ -106,12 +171,21 @@ export class ProductsService {
         and(eq(stockUnits.productId, products.id), isNotNull(stockUnits.id)),
       )
       .leftJoin(categories, eq(categories.id, products.categoryId))
-      .where(eq(products.isActive, true))
-      .groupBy(products.id, categories.name);
+      .where(and(...conditions))
+      .groupBy(products.id, categories.name)
+      .orderBy(orderBy)
+      .limit(limit)
+      .offset(offset);
 
-    return rows.map((r) =>
-      this.toView(r.product, r.availableCount ?? 0, r.categoryName ?? null),
-    );
+    return {
+      products: rows.map((r) =>
+        this.toView(r.product, r.availableCount ?? 0, r.categoryName ?? null),
+      ),
+      total,
+      page,
+      limit,
+      totalPages,
+    };
   }
 
   async findPublicById(id: string): Promise<ProductView> {

@@ -140,6 +140,29 @@ Send message via event `message:send`
 | File upload | Magic bytes validation + sharp compression |
 | API access | CORS terbatas + Helmet + Rate limiting |
 
+## Modul Market Data (Public API)
+
+Nodeline juga menyediakan **Market Data API** untuk data pasar real-time (forex, saham, crypto) yang diambil dari TradingView.
+
+Lihat dokumentasi lengkap arsitektur backend-nya di:
+- [13. Market Data Architecture — TradingView Integration](./13-market-data-architecture.md) — alur data, WS protocol, OHLC aggregation, persistence, scanner, rate limiting
+- [API Reference: Market Data](./api-reference/market-data.md) — endpoint documentation untuk customer
+
+### Diagram Alur Data
+
+```
+TradingView (WS) ──► TradingViewSocketService ──► (event: tradingview.tick)
+                                                         │
+                                                         ├──► CandleBuilderService ──► CandleRepository ──► PostgreSQL
+                                                         │
+                                                         └──► PublicApiController (SSE stream)
+
+TradingView (Scanner REST) ──► TradingViewScannerService ──► PublicApiController
+
+PublicApiController ──► TradingViewSocketService.getSnapshot() ──► Response
+PublicApiController ──► CandleBuilderService.getCandles() ──► Response
+```
+
 ## Catatan
 
 - Logging terbatas pada `console.log` — perlu diganti dengan logger terstruktur (Pino/Winston)
@@ -147,3 +170,4 @@ Send message via event `message:send`
 - Ticket store dan socket registry in-memory — untuk multi-instance perlu Redis
 - Audit log notification masih `console.log` stub
 - Email notification masih `console.log` stub (lihat `AuditLogService.notify()`)
+- Market Data WebSocket client adalah singleton — untuk multi-instance perlu Redis pub/sub

@@ -1,13 +1,18 @@
 import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module.js';
 import { ConfigService } from '@nestjs/config';
-import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
+import { ClassSerializerInterceptor, ValidationPipe, Logger } from '@nestjs/common';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import { PinoLoggerService } from './common/logger/pino-logger.service.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService);
+
+  // Use Pino as the application-wide logger
+  app.useLogger(new PinoLoggerService());
+  const logger = new Logger('Bootstrap');
 
   app.setGlobalPrefix('api/v1');
   app.use(helmet());
@@ -37,6 +42,6 @@ async function bootstrap() {
   const port = config.get<number>('port') ?? 3000;
   await app.listen(port);
 
-  console.log(`nodeline-api listening on :${port} (prefix /api/v1)`);
+  logger.log(`nodeline-api listening on :${port} (prefix /api/v1)`);
 }
 void bootstrap();

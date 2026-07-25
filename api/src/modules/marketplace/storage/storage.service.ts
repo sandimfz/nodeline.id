@@ -19,9 +19,9 @@ import sharp from 'sharp';
 import { DrizzleService } from '../../../database/drizzle/drizzle.service.js';
 import { products, orders, users } from '../../../database/drizzle/schema/index.js';
 
-export type UploadPurpose = 'product-image' | 'payment-proof' | 'avatar';
+export type UploadPurpose = 'product-image' | 'payment-proof' | 'avatar' | 'payment-method-image';
 
-const ALLOWED_PURPOSES: UploadPurpose[] = ['product-image', 'payment-proof', 'avatar'];
+const ALLOWED_PURPOSES: UploadPurpose[] = ['product-image', 'payment-proof', 'avatar', 'payment-method-image'];
 const ALLOWED_MIME_TYPES = [
   'image/jpeg',
   'image/png',
@@ -167,6 +167,11 @@ export class StorageService {
         'Untuk attach ke order, purpose harus payment-proof',
       );
     }
+    if (input.productId && input.purpose === 'payment-method-image') {
+      throw new BadRequestException(
+        'Payment method image tidak bisa di-attach ke produk',
+      );
+    }
 
     // ── Validasi & proses sesuai purpose ──
     let uploadBuffer: Buffer;
@@ -259,6 +264,36 @@ export class StorageService {
             position: 'centre',
           })
           .webp({ quality: 80 })
+          .toBuffer();
+
+        contentType = 'image/webp';
+        fileExtension = 'webp';
+      } else if (input.purpose === 'payment-method-image') {
+        // ── Payment method image: validasi dasar, kompres ringan ──
+        if (
+          !metadata.format ||
+          !['jpeg', 'png', 'webp'].includes(metadata.format)
+        ) {
+          throw new BadRequestException(
+            'Format gambar payment method harus JPEG, PNG, atau WebP',
+          );
+        }
+
+        // Ukuran file: maks 2 MB
+        if (fileBuffer.length > 2 * 1024 * 1024) {
+          throw new BadRequestException(
+            'Ukuran file gambar payment method maksimal 2 MB',
+          );
+        }
+
+        uploadBuffer = await sharp(fileBuffer)
+          .resize({
+            width: MAX_IMAGE_DIMENSION,
+            height: MAX_IMAGE_DIMENSION,
+            fit: 'inside',
+            withoutEnlargement: true,
+          })
+          .webp({ quality: WEBP_QUALITY })
           .toBuffer();
 
         contentType = 'image/webp';
