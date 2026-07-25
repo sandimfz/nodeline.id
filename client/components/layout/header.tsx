@@ -37,6 +37,7 @@ export function Header() {
               height={100}
               alt="Logo"
               className="h-8 w-auto"
+              priority
             />
           </Link>
 
