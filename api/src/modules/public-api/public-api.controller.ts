@@ -17,6 +17,7 @@ import { Throttle } from '@nestjs/throttler';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { Response, Request } from 'express';
 import { ApiKeyGuard } from './guards/api-key.guard.js';
+import { ServiceStatusGuard } from './guards/service-status.guard.js';
 import { RateLimitGuard } from '../usage/rate-limit.guard.js';
 import { UserDailyLimitGuard } from '../usage/user-daily-limit.guard.js';
 import { UsageInterceptor } from '../usage/usage.interceptor.js';
@@ -50,7 +51,7 @@ const SUPPORTED_SYMBOLS = new Set([
 ]);
 
 @Controller('market')
-@UseGuards(ApiKeyGuard, RateLimitGuard, UserDailyLimitGuard)
+@UseGuards(ServiceStatusGuard, ApiKeyGuard, RateLimitGuard, UserDailyLimitGuard)
 @UseInterceptors(UsageInterceptor)
 export class PublicApiController {
   private readonly logger = new Logger(PublicApiController.name);
