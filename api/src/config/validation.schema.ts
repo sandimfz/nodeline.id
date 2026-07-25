@@ -42,6 +42,13 @@ export const envValidationSchema = z.object({
   TRADINGVIEW_WS_URL: z.string().default('wss://data.tradingview.com/socket.io/websocket'),
   TRADINGVIEW_SCANNER_URL: z.string().default('https://scanner.tradingview.com/forex/scan'),
 
+  // OAuth
+  GOOGLE_CLIENT_ID: z.string().default(''),
+  GOOGLE_CLIENT_SECRET: z.string().default(''),
+  GITHUB_CLIENT_ID: z.string().default(''),
+  GITHUB_CLIENT_SECRET: z.string().default(''),
+  OAUTH_REDIRECT_BASE: z.string().default('http://localhost:3001'),
+
   R2_ACCESS_KEY_ID: z.string().default(''),
   R2_SECRET_ACCESS_KEY: z.string().default(''),
   R2_BUCKET_NAME: z.string().default('nodeline-images'),
