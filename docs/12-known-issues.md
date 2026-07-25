@@ -83,6 +83,60 @@ ON messages (conversation_id, created_at DESC);
 **Fix:** Pindahkan ke Redis.
 **Status:** TODO.
 
+### 5. Cloudflare Memblokir Crawler AI
+
+**Issue:** `robots.txt` production berisi managed content dari Cloudflare (AI Crawl Control) yang `Disallow: /` untuk GPTBot, ClaudeBot, CCBot, Google-Extended, Bytespider, Amazonbot, Applebot-Extended, dan meta-externalagent. Blok ini disisipkan Cloudflare di **atas** rules dari `app/robots.ts`.
+
+**Dampak:** Situs tidak bisa dirujuk oleh ChatGPT, Claude, Perplexity, atau AI assistant lain. Kalau strategi distribusi mengandalkan visibility di AI search, ini menghalangi.
+
+**Fix:** Cloudflare Dashboard → domain → AI Crawl Control → matikan atau sesuaikan. Bukan bisa diperbaiki dari kode.
+
+**Status:** Keputusan produk, bukan bug. Perlu dipilih sadar apakah mau di-allow.
+
+### 6. OpenNext Tanpa Incremental Cache
+
+**Issue:** `open-next.config.ts` memakai `defineCloudflareConfig()` tanpa opsi `incrementalCache`. Route yang mengandalkan ISR tidak punya tempat penyimpanan di production.
+
+**Dampak:** Route ISR mengembalikan 404. Sudah kejadian pada `app/sitemap.ts` — build menghasilkan cache entry yang benar, tapi request ke `/sitemap.xml` di production menjawab 404 HTML. Diakali dengan `export const dynamic = "force-dynamic"`.
+
+**Fix jangka panjang:** Konfigurasi incremental cache (R2 atau KV) di `open-next.config.ts` supaya ISR benar-benar bisa dipakai:
+```ts
+import { defineCloudflareConfig } from "@opennextjs/cloudflare";
+import r2IncrementalCache from "@opennextjs/cloudflare/overrides/incremental-cache/r2-incremental-cache";
+
+export default defineCloudflareConfig({ incrementalCache: r2IncrementalCache });
+```
+
+**Status:** TODO. Sementara semua route dynamic, jadi belum menghalangi.
+
+### 7. Belum Ada OG Image
+
+**Issue:** Metadata sudah punya `openGraph`, tapi belum ada gambar. Belum ada `app/opengraph-image.tsx` atau file statis `/og-default.png`.
+
+**Dampak:** Link yang di-share ke WhatsApp/Twitter/Discord tampil tanpa gambar preview.
+
+**Fix:** Buat `app/opengraph-image.tsx` memakai `ImageResponse` dari `next/og`, plus varian per-route untuk produk dan API service. Catatan: `ImageResponse` hanya mendukung flexbox, bukan grid.
+
+**Status:** TODO.
+
+### 8. Sitemap Terbatas 100 Item
+
+**Issue:** `app/sitemap.ts` fetch produk dan API service dengan `limit=100` karena API menolak nilai lebih besar (400 "limit must not be greater than 100").
+
+**Dampak:** Kalau katalog melebihi 100 produk, sisanya tidak masuk sitemap.
+
+**Fix:** Paginate di sitemap generator, atau pakai `generateSitemaps()` kalau nanti melebihi 50.000 URL.
+
+**Status:** Belum menghalangi (katalog masih kecil), tapi akan jadi masalah senyap kalau terlewat.
+
+### 9. Halaman Nav yang Belum Ada
+
+**Issue:** Beberapa link nav menunjuk ke halaman yang belum dibuat: `/help`, `/status` (footer sidebar), `/settings`, `/marketplace/cart`.
+
+**Dampak:** 404 saat diklik.
+
+**Status:** Perlu dibuat atau linknya dihapus. `/wallet` dan icon cart di header sudah dihapus.
+
 ---
 
 ## TODO / Improvement

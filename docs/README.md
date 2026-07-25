@@ -33,6 +33,7 @@ Selamat datang di dokumentasi teknis **Nodeline.id**, platform marketplace digit
 | # | Dokumen | Deskripsi |
 |---|---------|-----------|
 | 15 | [Smooth UX Rules](./15-smooth-ux-rules.md) | **Aturan project ini** untuk navigasi tanpa delay/skeleton. Baca sebelum menambah halaman. |
+| — | [SEO](./seo.md) | Panduan SEO Next.js App Router (metadata, sitemap, JSON-LD, Core Web Vitals) |
 | — | [Prefetch Rules](./rule-prefetch.md) | Aturan prefetch TanStack Query (generic) |
 | — | [Frontend Perf Checklist](./08-frontend-performance-checklist-generic.md) | Checklist bundle, image, font, virtualization (generic) |
 | — | [Skeleton Diagnostic](./09-debug-skeleton-loading-diagnostic.md) | Panduan diagnosis skeleton yang masih muncul (generic) |
