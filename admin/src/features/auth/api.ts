@@ -13,10 +13,10 @@ export async function fetchUsers(): Promise<User[]> {
 
 /**
  * Login admin.
- * POST /api/auth/login → Vite proxy → Nest
+ * POST /api/auth/admin/login → server rejects non-god role
  */
 export async function loginUser(data: LoginInput): Promise<AuthResponse> {
-  const res = await api.post<AuthResponse>("/auth/login", data);
+  const res = await api.post<AuthResponse>("/auth/admin/login", data);
   return res.data;
 }
 

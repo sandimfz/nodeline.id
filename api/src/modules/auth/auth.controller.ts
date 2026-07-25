@@ -60,6 +60,21 @@ export class AuthController {
     };
   }
 
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Post('admin/login')
+  @HttpCode(HttpStatus.OK)
+  async adminLogin(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.auth.login(dto, 'god');
+    this.setRefreshCookie(res, result.refreshToken);
+    return {
+      user: result.user,
+      accessToken: result.accessToken,
+    };
+  }
+
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @UseGuards(JwtRefreshGuard)
   @Post('refresh')
