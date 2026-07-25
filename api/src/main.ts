@@ -15,10 +15,18 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
 
   // CORS harus PALING ATAS sebelum middleware lain
-  const corsOrigins = config.get<string[]>('cors.origins');
+  const corsOrigins = config.get<string[]>('cors.origins') ?? [];
   logger.log(`CORS origins: ${JSON.stringify(corsOrigins)}`);
   app.enableCors({
-    origin: corsOrigins,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (curl, server-to-server, etc.)
+      if (!origin) return callback(null, true);
+      if (corsOrigins.includes(origin)) {
+        return callback(null, origin);
+      }
+      logger.warn(`CORS blocked origin: ${origin}`);
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
