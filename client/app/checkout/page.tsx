@@ -1,8 +1,11 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { CheckoutForm } from "./checkout-form";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Checkout",
+  // Cart/checkout carries per-user state and has nothing to index.
+  robots: { index: false, follow: false },
 };
 
 export default function CheckoutPage() {
