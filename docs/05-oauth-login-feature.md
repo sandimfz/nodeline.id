@@ -1,5 +1,9 @@
 # Login dengan Google & GitHub (OAuth) — Checklist
 
+> **Status:** Implementasi selesai, menggunakan pendekatan yang lebih sederhana dari Opsi A/B di bawah. Alur final: client call BFF → BFF call Nest → Nest return OAuth URL + set `state` cookie → redirect ke provider → callback page kirim code+state via BFF → Nest validasi state, tukar code, issue tokens. Lihat [05-auth.md](./05-auth.md) untuk dokumentasi final.
+>
+> **Update keamanan (2026-07-26):** OAuth state parameter (CSRF protection) sudah ditambahkan. State di-sign dengan HMAC-SHA256, disimpan di httpOnly cookie, divalidasi di callback.
+
 Nyambung ke sistem auth existing: access token (JWT, short-lived) + refresh token (httpOnly cookie, di-rotate). Tujuannya: hasil akhir OAuth login harus terasa **identik** dengan hasil `POST /auth/login` biasa dari sisi frontend — bukan mekanisme session terpisah.
 
 ---

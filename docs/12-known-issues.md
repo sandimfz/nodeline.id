@@ -48,6 +48,38 @@ Penyebab dan solusinya cukup panjang, didokumentasikan terpisah di [15. Smooth U
 
 Singkatnya: `loading.tsx` + route dynamic + `refetchOnMount: true` = skeleton di setiap soft navigation, tidak peduli cache sudah ada.
 
+### OAuth CSRF — tidak ada `state` parameter
+
+**Gejala:** OAuth callback endpoint menerima `code` tanpa memverifikasi bahwa flow dimulai oleh browser yang sama.
+
+**Penyebab:** Google dan GitHub OAuth redirect URL dibangun tanpa `state` parameter. Attacker bisa memaksa korban login ke akun attacker (login CSRF).
+
+**Fix:**
+- Server generate signed state (random + timestamp + HMAC-SHA256) saat return OAuth URL
+- State disimpan di httpOnly cookie (`nl_oauth_state`, 5 menit, sameSite=lax)
+- State dikirim ke provider sebagai query param
+- Callback memvalidasi: state dari param === cookie, signature valid, belum expired
+- Cookie di-clear setelah konsumsi (one-time)
+- BFF meneruskan cookie ke/dari Nest
+
+**File:** `api/src/modules/auth/oauth.controller.ts`, `client/app/auth/callback/*/page.tsx`, `client/app/api/v1/bff/[...path]/route.ts`
+
+### Admin token disimpan di localStorage
+
+**Gejala:** XSS di admin panel bisa exfiltrate access token + refresh token dari localStorage → full session takeover.
+
+**Penyebab:** `admin/src/stores/auth-store.ts` menyimpan `admin_token`, `admin_refresh`, `admin_user` di `localStorage`.
+
+**Fix:**
+- Access token: memory-only (Zustand state, hilang saat page refresh)
+- Refresh token: rely pada httpOnly cookie (`nl_refresh`) yang sudah di-set Nest
+- User info: dipindah ke `sessionStorage` (non-sensitive, auto-clear saat tab close)
+- Axios: ditambah `withCredentials: true` agar cookie terkirim otomatis
+- AuthInit: pada mount, silent refresh via httpOnly cookie untuk restore session
+- Trade-off: ~100ms delay saat boot, dihandle oleh ProtectedRoute yang menunggu hydration
+
+**File:** `admin/src/stores/auth-store.ts`, `admin/src/lib/api-client.ts`, `admin/src/components/auth/auth-init.tsx`, `admin/src/features/auth/api.ts`, `admin/src/features/auth/hooks.ts`
+
 ---
 
 ## Bug Diketahui

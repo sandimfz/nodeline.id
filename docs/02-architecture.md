@@ -48,7 +48,7 @@ Project Nodeline.id menggunakan arsitektur **monorepo** dengan tiga aplikasi ter
 │                   Admin Panel (admin/)                   │
 │    Vite 8 SPA — React 19                                │
 │    Proxy via Vite dev server: /api → NestJS             │
-│    Token in localStorage                                │
+│    Token in memory + httpOnly cookie                     │
 │    Secret path: /{VITE_ADMIN_LOGIN_PATH}/*              │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -136,6 +136,8 @@ Send message via event `message:send`
 | Refresh token | SHA256 hash (raw token tidak pernah disimpan) |
 | Stock content | AES-256-GCM (key 32 byte dari env) |
 | Session client | httpOnly cookie untuk refresh token |
+| Session admin | Access token memory-only (Zustand), refresh via httpOnly cookie |
+| OAuth CSRF | Signed state parameter (HMAC-SHA256) + httpOnly cookie |
 | JWT payload | `sub`, `email`, `role`, `jti` (random jti untuk tracking) |
 | File upload | Magic bytes validation + sharp compression |
 | API access | CORS terbatas + Helmet + Rate limiting |
@@ -210,10 +212,10 @@ Status di-cache in-memory 30 detik agar tidak menambah query DB per request. Loo
 Selain email/password, tersedia login via Google dan GitHub. Lihat [05. Auth](./05-auth.md).
 
 ```
-Client → GET /auth/oauth/{provider}          → { url } (provider consent URL)
-       → redirect ke provider
-       → provider redirect ke /auth/callback/{provider}?code=...
-       → GET /auth/oauth/{provider}/callback → exchange code, find-or-create user, issue tokens
+Client → GET /auth/oauth/{provider}          → { url } + set nl_oauth_state cookie (signed state)
+       → redirect ke provider (state di URL)
+       → provider redirect ke /auth/callback/{provider}?code=...&state=...
+       → GET /auth/oauth/{provider}/callback → validate state (HMAC + cookie), exchange code, issue tokens
 ```
 
 User yang login OAuth dengan email belum terdaftar akan **otomatis dibuat**. Kalau email sudah terdaftar, account di-link (`oauthProvider` + `oauthId` ditambahkan ke user existing).

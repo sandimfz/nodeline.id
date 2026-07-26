@@ -1,16 +1,22 @@
 import { create } from "zustand";
 import type { User } from "@/features/auth/types";
 
-/** Key used to persist token & refresh token in localStorage */
-const TOKEN_KEY = "admin_token";
-const REFRESH_KEY = "admin_refresh";
+/**
+ * Admin auth store — access token in MEMORY ONLY.
+ *
+ * Security: tokens are never written to localStorage to prevent XSS exfiltration.
+ * - Access token: stored in Zustand (memory) — cleared on page refresh
+ * - Refresh token: stored in httpOnly cookie by Nest backend — inaccessible to JS
+ * - User info: stored in sessionStorage (non-sensitive, clears on tab close)
+ *
+ * On page refresh, the app will auto-refresh the session via the httpOnly cookie.
+ */
+
 const USER_KEY = "admin_user";
 
 interface AuthState {
-  /** Access token persisted in localStorage */
+  /** Access token stored in memory only (never localStorage) */
   token: string | null;
-  /** Refresh token persisted in localStorage */
-  refreshToken: string | null;
   /** Current authenticated user */
   user: User | null;
   /** Whether we've checked the session on mount */
@@ -23,43 +29,46 @@ interface AuthState {
   setHydrated: () => void;
 }
 
-function loadFromStorage() {
+function loadUserFromStorage(): User | null {
   try {
-    const token = localStorage.getItem(TOKEN_KEY);
-    const refreshToken = localStorage.getItem(REFRESH_KEY);
-    const userRaw = localStorage.getItem(USER_KEY);
-    const user = userRaw ? (JSON.parse(userRaw) as User) : null;
-    return { token, refreshToken, user, _hydrated: !!token };
+    const userRaw = sessionStorage.getItem(USER_KEY);
+    return userRaw ? (JSON.parse(userRaw) as User) : null;
   } catch {
-    return { token: null, refreshToken: null, user: null, _hydrated: false };
+    return null;
   }
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  ...loadFromStorage(),
+  token: null, // Always starts null — refreshed from httpOnly cookie on mount
+  refreshToken: null, // DEPRECATED — no longer stored client-side
+  user: loadUserFromStorage(),
+  _hydrated: false,
 
-  setSession: (token, refreshToken, user) => {
-    localStorage.setItem(TOKEN_KEY, token);
-    if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken);
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
-    set({ token, refreshToken: refreshToken ?? null, user, _hydrated: true });
+  setSession: (token, _refreshToken, user) => {
+    // Token: memory only. Refresh token: handled by httpOnly cookie (not stored here).
+    // User info: sessionStorage (non-sensitive, clears on tab close)
+    try {
+      sessionStorage.setItem(USER_KEY, JSON.stringify(user));
+    } catch { /* quota exceeded — non-critical */ }
+    set({ token, user, _hydrated: true });
   },
 
   setToken: (token) => {
-    localStorage.setItem(TOKEN_KEY, token);
     set({ token });
   },
 
   setUser: (user) => {
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    try {
+      sessionStorage.setItem(USER_KEY, JSON.stringify(user));
+    } catch { /* non-critical */ }
     set({ user });
   },
 
   clearSession: () => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(REFRESH_KEY);
-    localStorage.removeItem(USER_KEY);
-    set({ token: null, refreshToken: null, user: null, _hydrated: false });
+    try {
+      sessionStorage.removeItem(USER_KEY);
+    } catch { /* non-critical */ }
+    set({ token: null, user: null });
   },
 
   setHydrated: () => set({ _hydrated: true }),

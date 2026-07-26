@@ -4,7 +4,7 @@ import { ADMIN_BASE } from "@/lib/config";
 
 /**
  * ProtectedRoute — checks if admin is authenticated.
- * If no token found in localStorage, redirects to the secret login path.
+ * If no token in memory (after silent refresh attempt), redirects to login.
  * Otherwise renders the child routes (including AppShell).
  */
 export function ProtectedRoute() {

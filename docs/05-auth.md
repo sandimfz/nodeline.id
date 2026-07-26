@@ -2,9 +2,9 @@
 
 ## Arsitektur Auth
 
-Nodeline.id menggunakan **JWT access token** + **opaque refresh token** untuk autentikasi. Ada dua mekanisme penyimpanan token berbeda untuk client dan admin:
+Nodeline.id menggunakan **JWT access token** + **opaque refresh token** untuk autentikasi. Kedua aplikasi (client dan admin) menyimpan token secara aman:
 
-### Client (Next.js) — httpOnly Cookie
+### Client (Next.js) — httpOnly Cookie via BFF
 
 ```
 Login/Register
@@ -13,9 +13,9 @@ Login/Register
 NestJS → accessToken (response body) + refreshToken (httpOnly cookie)
      │                                      │
      ▼                                      ▼
-Zustand store (in-memory)               Cookie diset oleh BFF
-accessToken hanya di memory              refreshToken otomatis terkirim
-(tidak persist ke localStorage)          di setiap request via cookie
+BFF set nl_session cookie (httpOnly)     BFF forward nl_refresh cookie
+accessToken di memory (Zustand)          refreshToken otomatis terkirim
+                                         di setiap request via cookie
 
 Auto-refresh:
   401 response → POST /auth/refresh (cookie otomatis terkirim)
@@ -23,25 +23,31 @@ Auto-refresh:
               Mutex: hanya 1 refresh call untuk N parallel 401
 ```
 
-### Admin (Vite SPA) — localStorage
+### Admin (Vite SPA) — Memory + httpOnly Cookie
 
 ```
 Login
   │
   ▼
-NestJS → accessToken + refreshToken + user (response body)
+NestJS → accessToken (response body) + refreshToken (httpOnly cookie)
   │
   ▼
-localStorage (admin_token, admin_refresh, admin_user)
+Zustand store (in-memory ONLY — TIDAK di localStorage)
   │
   ▼
-Axios interceptor → attach Bearer token di setiap request
+Axios interceptor (withCredentials: true) → attach Bearer token
 
-Auto-refresh:
+Session recovery on page refresh:
+  AuthInit mount → POST /auth/refresh (httpOnly cookie otomatis terkirim)
+                 → accessToken baru → simpan di memory → render app
+
+Auto-refresh on 401:
   401 response → Axios interceptor → POST /auth/refresh
-               → accessToken baru disimpan → retry
+               → accessToken baru di-store → retry
               Mutex: queue N parallel 401 selama refresh
 ```
+
+**Catatan keamanan:** Access token admin TIDAK PERNAH disimpan di `localStorage`. Ini mencegah exfiltration token melalui XSS. User info (non-sensitive) disimpan di `sessionStorage` yang auto-clear saat tab ditutup.
 
 ---
 
@@ -54,10 +60,10 @@ Semua endpoint auth berada di prefix `/api/v1/auth`.
 | POST | `/auth/register` | Public | Register user baru (rate limit: 5/60s) |
 | POST | `/auth/login` | Public | Login untuk semua role (rate limit: 5/60s) |
 | POST | `/auth/admin/login` | Public | Login khusus admin — tolak non-god (rate limit: 5/60s) |
-| GET | `/auth/oauth/google` | Public | Dapatkan Google consent URL |
-| GET | `/auth/oauth/google/callback` | Public | Tukar code, find-or-create user, issue token |
-| GET | `/auth/oauth/github` | Public | Dapatkan GitHub authorize URL |
-| GET | `/auth/oauth/github/callback` | Public | Tukar code, find-or-create user, issue token |
+| GET | `/auth/oauth/google` | Public | Dapatkan Google consent URL + set state cookie |
+| GET | `/auth/oauth/google/callback` | Public | Validasi state, tukar code, issue token |
+| GET | `/auth/oauth/github` | Public | Dapatkan GitHub authorize URL + set state cookie |
+| GET | `/auth/oauth/github/callback` | Public | Validasi state, tukar code, issue token |
 | POST | `/auth/refresh` | Refresh Token | Refresh access token |
 | POST | `/auth/logout` | JWT | Logout, revoke refresh token |
 | GET | `/auth/me` | JWT | Get current user profile |
@@ -72,14 +78,40 @@ Semua endpoint auth berada di prefix `/api/v1/auth`.
 ### Alur
 
 ```
-1. Client GET /auth/oauth/{provider}  → { url }
+1. Client GET /auth/oauth/{provider}
+   → Server generate signed state, set httpOnly cookie nl_oauth_state
+   → Return { url } (termasuk state sebagai query param)
 2. Browser redirect ke url (consent screen provider)
-3. Provider redirect ke {OAUTH_REDIRECT_BASE}/auth/callback/{provider}?code=...
-4. Callback page (client) kirim code ke GET /auth/oauth/{provider}/callback via BFF
-5. Server tukar code → access token provider → ambil profil user
-6. Server find-or-create user, issue JWT + refresh token
-7. BFF set session cookie, client simpan accessToken di Zustand
+3. Provider redirect ke {OAUTH_REDIRECT_BASE}/auth/callback/{provider}?code=...&state=...
+4. Callback page (client) kirim code + state ke GET /auth/oauth/{provider}/callback via BFF
+5. Server validasi state (HMAC signature + expiry + match dengan cookie)
+6. Server tukar code → access token provider → ambil profil user
+7. Server find-or-create user, issue JWT + refresh token
+8. BFF set session cookie, client simpan accessToken di Zustand
 ```
+
+### OAuth State (CSRF Protection)
+
+OAuth flow dilindungi dari CSRF attack menggunakan `state` parameter:
+
+```
+Generate state:
+  random (16 bytes hex) + timestamp (ms) + HMAC-SHA256(random.timestamp, JWT_ACCESS_SECRET)
+  Format: "<random>.<timestamp>.<hmac>"
+
+Set cookie:
+  nl_oauth_state = state value
+  httpOnly, secure (production), sameSite=lax, path=/api/v1/auth/oauth
+  maxAge: 5 menit
+
+Validate on callback:
+  1. state query param === nl_oauth_state cookie value
+  2. HMAC signature valid (constant-time comparison via timingSafeEqual)
+  3. Timestamp belum expired (< 5 menit)
+  4. Cookie di-clear setelah validasi (one-time use)
+```
+
+**Mengapa ini penting:** Tanpa state validation, attacker bisa memaksa korban login ke akun attacker (login CSRF) dengan membuka crafted callback URL. Dengan state yang signed dan disimpan di cookie, hanya browser yang memulai flow yang bisa menyelesaikannya.
 
 ### Find-or-Create
 
@@ -117,7 +149,8 @@ Redirect URI yang harus didaftarkan di provider:
 
 - Email GitHub bisa privat — kalau `user.email` null, server fetch `/user/emails` dan ambil yang primary + verified. Kalau tetap tidak ada, request ditolak.
 - `password_hash` sekarang nullable. Login password menolak user yang password_hash-nya NULL (user OAuth-only).
-- BFF **wajib** meneruskan query string (`?code=...`) ke backend. Ini pernah jadi bug: BFF hanya meneruskan pathname sehingga backend selalu menjawab "Missing authorization code".
+- BFF **wajib** meneruskan query string (`?code=...&state=...`) ke backend. Ini pernah jadi bug: BFF hanya meneruskan pathname sehingga backend selalu menjawab "Missing authorization code".
+- BFF juga **wajib** meneruskan `nl_oauth_state` cookie ke backend (untuk state validation) dan meneruskan Set-Cookie dari backend ke browser (untuk state cookie setting).
 
 ---
 
@@ -137,18 +170,33 @@ Frontend admin juga mengecek role di `onSuccess` sebagai lapisan kedua (defense-
 - Payload: `{ sub, email, role, jti }`
 - Expiry: 15 menit (configurable via `JWT_ACCESS_EXPIRES_IN`)
 - Dikirim via `Authorization: Bearer <token>` header
-- Client: disimpan di in-memory Zustand store (tidak persist)
-- Admin: disimpan di localStorage
+- **Client:** disimpan di in-memory Zustand store (tidak persist)
+- **Admin:** disimpan di in-memory Zustand store (tidak persist, BUKAN localStorage)
 
 ### Refresh Token
 
 - Format: Opaque token `nl_rt_{48 bytes base64url}`
 - Hanya SHA256 hash yang disimpan di database
 - Expiry: 30 hari (configurable via `JWT_REFRESH_EXPIRES_IN`)
-- Client: httpOnly cookie (path: `/api/v1/auth`, secure, sameSite)
-- Admin: localStorage
+- **Client:** httpOnly cookie via BFF (path: `/api/v1/bff`, secure, sameSite=strict)
+- **Admin:** httpOnly cookie langsung dari Nest (path: `/api/v1/auth`, secure, sameSite=strict)
 - **Rotation:** Setiap refresh, token lama di-revoke dan token baru diterbitkan
 - **Reuse Detection:** Jika token yang sudah di-revoke dipakai lagi, semua sesi user di-revoke
+
+### Session Recovery (Admin)
+
+Karena access token di-admin hanya di memory, page refresh akan menghilangkannya. Alur recovery:
+
+```
+1. App mount → AuthInit component
+2. Cek apakah sudah ada token di memory
+3. Jika tidak ada → POST /auth/refresh (httpOnly cookie otomatis dikirim)
+4. Jika berhasil → simpan accessToken baru di Zustand → render protected routes
+5. Jika gagal → user tetap logged out → redirect ke login
+6. setHydrated() dipanggil → ProtectedRoute baru render
+```
+
+Ini menambah ~100ms delay saat boot, tapi jauh lebih aman dari XSS dibanding menyimpan token di localStorage.
 
 ### Refresh Token Table
 
@@ -260,8 +308,8 @@ class CategoriesController {
 ## Alur Refresh Token
 
 ```
-1. Client POST /auth/refresh (cookie/body refreshToken otomatis terkirim)
-2. JwtRefreshGuard extract raw refresh token → attach ke req.user
+1. Client POST /auth/refresh (cookie otomatis terkirim via httpOnly)
+2. JwtRefreshGuard extract raw refresh token dari cookie → attach ke req.user
 3. AuthService:
    a. Hash raw token dengan SHA256
    b. Cari di tabel refresh_tokens
@@ -281,6 +329,8 @@ class CategoriesController {
 | Refresh token storage | SHA256 hash (raw token never stored) |
 | Reuse detection | Revoke all sessions on rotated token reuse |
 | JTI (JWT ID) | Random 12-byte hex di setiap access token |
+| OAuth CSRF | Signed state parameter + httpOnly cookie (HMAC-SHA256) |
+| Token XSS protection | Memory-only storage (tidak di localStorage) |
 | CORS | Terbatas ke origin yang terdaftar di env |
 | Rate limit auth | 5 request/60 detik untuk login & register |
 | Auto-cleanup | Expired refresh tokens dihapus saat revoke |

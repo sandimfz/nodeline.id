@@ -1,6 +1,7 @@
 import axios, { AxiosError, type AxiosRequestConfig } from "axios";
 import type { ApiError } from "@/features/auth/types";
 import { ADMIN_BASE, API_URL } from "./config";
+import { useAuthStore } from "@/stores/auth-store";
 
 /**
  * Extract error message from API response.
@@ -34,11 +35,14 @@ interface RequestConfig extends AxiosRequestConfig {
  * Axios instance for admin panel.
  * - Development: baseURL "/api" → Vite proxy → Nest backend
  * - Production:  baseURL langsung ke API (VITE_API_URL)
- * Token is stored in localStorage and attached via interceptor.
+ *
+ * Security: Access token is stored in memory only (Zustand store).
+ * Refresh token is sent via httpOnly cookie (credentials: 'include').
  */
 const api = axios.create({
   baseURL: API_URL ?? "/api",
   headers: { "Content-Type": "application/json" },
+  withCredentials: true, // Send httpOnly cookies (refresh token) with every request
 });
 
 /** Queue of pending requests while refreshing */
@@ -59,16 +63,16 @@ function processQueue(error: unknown, token: string | null = null) {
   failedQueue = [];
 }
 
-/** Attach Bearer token to every request */
+/** Attach Bearer token from memory (Zustand store) to every request */
 api.interceptors.request.use((config) => {
-  const stored = localStorage.getItem("admin_token");
-  if (stored) {
-    config.headers.Authorization = `Bearer ${stored}`;
+  const token = useAuthStore.getState().token;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-/** Auto-refresh on 401 */
+/** Auto-refresh on 401 using httpOnly cookie */
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError<ApiError>) => {
@@ -99,24 +103,22 @@ api.interceptors.response.use(
     isRefreshing = true;
 
     try {
-      const refreshToken = localStorage.getItem("admin_refresh");
-      if (!refreshToken) throw new Error("No refresh token");
-
+      // Refresh via httpOnly cookie — no need to send refresh token in body
+      // The cookie is sent automatically via withCredentials: true
       const { data } = await api.post<{ accessToken: string }>(
         "/auth/refresh",
-        { refreshToken },
+        {},
       );
 
-      localStorage.setItem("admin_token", data.accessToken);
+      // Store new access token in memory only
+      useAuthStore.getState().setToken(data.accessToken);
       processQueue(null, data.accessToken);
 
       originalRequest.headers!.Authorization = `Bearer ${data.accessToken}`;
       return api(originalRequest);
     } catch (refreshError) {
       processQueue(refreshError, null);
-      localStorage.removeItem("admin_token");
-      localStorage.removeItem("admin_refresh");
-      localStorage.removeItem("admin_user");
+      useAuthStore.getState().clearSession();
       // Redirect to the secret login path
       window.location.href = ADMIN_BASE;
       return Promise.reject(refreshError);

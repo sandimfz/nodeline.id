@@ -37,7 +37,7 @@
 
 ### 3. Admin Panel (`admin/`)
 - Vite 8 + React 19 SPA
-- Token management via localStorage
+- Token management via httpOnly cookie + in-memory access token
 - Vite dev server proxy ke NestJS backend
 - React Router v7 untuk routing
 - TanStack Query untuk data fetching

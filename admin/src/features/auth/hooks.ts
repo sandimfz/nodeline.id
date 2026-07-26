@@ -8,7 +8,8 @@ import type { LoginInput } from "./types";
 
 /**
  * Login mutation for admin.
- * On success: persists token + user in localStorage + zustand, redirects.
+ * On success: persists token in memory (Zustand), redirects.
+ * Refresh token is stored as httpOnly cookie by Nest backend automatically.
  */
 export function useLogin() {
   const navigate = useNavigate();
@@ -78,7 +79,7 @@ export function useUsers() {
 
 /**
  * Get current admin user info.
- * Reads token from zustand (which reads from localStorage).
+ * Token is read from Zustand (memory-only).
  */
 export function useMe() {
   const token = useAuthStore((s) => s.token);

@@ -61,10 +61,19 @@ async function handler(request: NextMethodRequest) {
   const ct = request.headers.get("content-type");
   if (ct) headers.set("content-type", ct);
 
-  // Forward the refresh cookie if present (for /auth/refresh)
+  // Forward relevant cookies to Nest backend
+  const cookieParts: string[] = [];
   const refreshCookie = request.cookies.get(REFRESH_COOKIE);
   if (refreshCookie?.value) {
-    headers.set("cookie", `${REFRESH_COOKIE}=${refreshCookie.value}`);
+    cookieParts.push(`${REFRESH_COOKIE}=${refreshCookie.value}`);
+  }
+  // Forward OAuth state cookie for CSRF validation on OAuth callbacks
+  const oauthStateCookie = request.cookies.get("nl_oauth_state");
+  if (oauthStateCookie?.value) {
+    cookieParts.push(`nl_oauth_state=${oauthStateCookie.value}`);
+  }
+  if (cookieParts.length > 0) {
+    headers.set("cookie", cookieParts.join("; "));
   }
 
   // For protected endpoints, attach the access token from the session cookie
@@ -123,9 +132,31 @@ async function handler(request: NextMethodRequest) {
     }
   });
 
-  // Handle Set-Cookie from Nest (refresh token)
+  // Handle Set-Cookie from Nest (refresh token + OAuth state)
   const setCookieHeader = nestResponse.headers.get("set-cookie");
   const refreshTokenValue = parseCookieValue(setCookieHeader, REFRESH_COOKIE);
+  const oauthStateValue = parseCookieValue(setCookieHeader, "nl_oauth_state");
+
+  // Forward OAuth state cookie to browser (set on /auth/oauth/:provider, cleared on callback)
+  if (oauthStateValue) {
+    response.cookies.set("nl_oauth_state", oauthStateValue, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/api/v1/bff/auth/oauth",
+      maxAge: 60 * 5, // 5 minutes
+    });
+  }
+  // Clear OAuth state cookie if Nest instructs (max-age=0 or empty value in set-cookie)
+  if (setCookieHeader?.includes("nl_oauth_state=;") || setCookieHeader?.includes("nl_oauth_state=; ")) {
+    response.cookies.set("nl_oauth_state", "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/api/v1/bff/auth/oauth",
+      maxAge: 0,
+    });
+  }
 
   // --- Auth response handling: manage session & refresh cookies ---
   const isAuthPath = AUTH_PATHS.has(path);

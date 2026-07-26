@@ -23,13 +23,10 @@ export async function loginUser(data: LoginInput): Promise<AuthResponse> {
 /**
  * Refresh access token.
  * POST /api/auth/refresh → Vite proxy → Nest
+ * Refresh token is sent automatically via httpOnly cookie (withCredentials: true).
  */
-export async function refreshToken(
-  refreshToken: string,
-): Promise<{ accessToken: string }> {
-  const res = await api.post<{ accessToken: string }>("/auth/refresh", {
-    refreshToken,
-  });
+export async function refreshToken(): Promise<{ accessToken: string }> {
+  const res = await api.post<{ accessToken: string }>("/auth/refresh", {});
   return res.data;
 }
 

@@ -306,7 +306,7 @@ admin/
 │   │   └── utils.ts
 │   │
 │   ├── stores/
-│   │   └── auth-store.ts            # Zustand + localStorage persist
+│   │   └── auth-store.ts            # Zustand (memory-only token, httpOnly cookie refresh)
 │   │
 │   └── hooks/
 │       └── use-mobile.ts

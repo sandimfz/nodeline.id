@@ -14,12 +14,17 @@ export default function GitHubCallbackPage() {
 
   useEffect(() => {
     const code = searchParams.get("code");
+    const state = searchParams.get("state");
+
     if (!code) {
       setError("Missing authorization code");
       return;
     }
 
-    fetch(`/api/v1/bff/auth/oauth/github/callback?code=${encodeURIComponent(code)}`)
+    const params = new URLSearchParams({ code });
+    if (state) params.set("state", state);
+
+    fetch(`/api/v1/bff/auth/oauth/github/callback?${params.toString()}`)
       .then(async (res) => {
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
