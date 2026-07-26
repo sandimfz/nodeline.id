@@ -4,7 +4,7 @@ import { ApiDirectoryAdminController } from './api-directory-admin.controller.js
 import { ApiDirectoryService } from './api-directory.service.js';
 
 @Module({
-  controllers: [ApiDirectoryController, ApiDirectoryAdminController],
+  controllers: [ApiDirectoryAdminController, ApiDirectoryController],
   providers: [ApiDirectoryService],
   exports: [ApiDirectoryService],
 })
