@@ -11,7 +11,18 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Empty, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
-import { IconApi, IconArrowRight } from "@tabler/icons-react";
+import {
+  IconApi,
+  IconArrowRight,
+  IconChartLine,
+  IconMovie,
+  IconTool,
+  IconCoin,
+  IconUsers,
+  IconRobot,
+  IconLink,
+  IconMessage,
+} from "@tabler/icons-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 import type { ApiService, ApiServiceListResult } from "@/features/api-directory/types";
@@ -28,13 +39,16 @@ const pricingLabel = {
   PAID: "Berbayar",
 };
 
-const categoryEmoji: Record<string, string> = {
-  trading: "📈",
-  entertainment: "🎬",
-  utility: "🔧",
-  finance: "💰",
-  social: "👥",
-  ai: "🤖",
+import type { ComponentType } from "react";
+
+const categoryIcon: Record<string, ComponentType<{ className?: string }>> = {
+  trading: IconChartLine,
+  entertainment: IconMovie,
+  utility: IconTool,
+  finance: IconCoin,
+  social: IconUsers,
+  ai: IconRobot,
+  communication: IconMessage,
 };
 
 export function ApiDirectoryPage() {
@@ -87,7 +101,7 @@ export function ApiDirectoryPage() {
 
 function ServiceCard({ service }: { service: ApiService }) {
   const queryClient = useQueryClient();
-  const emoji = categoryEmoji[service.category] ?? "🔗";
+  const Icon = categoryIcon[service.category] ?? IconLink;
 
   /** Prefetch detail on hover so navigation feels instant */
   const prefetchDetail = () => {
@@ -113,8 +127,8 @@ function ServiceCard({ service }: { service: ApiService }) {
         <CardHeader>
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-lg border bg-muted text-xl">
-                {emoji}
+              <div className="flex size-10 items-center justify-center rounded-lg border bg-muted">
+                <Icon className="size-5 text-foreground" />
               </div>
               <div>
                 <CardTitle className="font-heading text-base">
