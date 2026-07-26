@@ -72,10 +72,10 @@ const ROW_TRANSITION = { duration: 0.22, ease: EASE_OUT } as const;
 const FAST_TRANSITION = { duration: 0.16, ease: EASE_OUT } as const;
 
 const STATUS_LABEL: Record<FileUploadStatus, string> = {
-  queued: "Queued",
-  uploading: "Uploading",
-  success: "Uploaded",
-  error: "Failed",
+  queued: "Antrian",
+  uploading: "Mengunggah",
+  success: "Berhasil",
+  error: "Gagal",
 };
 
 const STATUS_TONE: Record<FileUploadStatus, string> = {

@@ -361,7 +361,7 @@ function ApiKeyCard({
               <AlertDialogTrigger render={<Button variant="ghost" size="icon" className="size-8 shrink-0 text-muted-foreground hover:text-destructive"><IconTrash className="size-4" /></Button>} />
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Revoke API Key</AlertDialogTitle>
+                  <AlertDialogTitle>Cabut API Key</AlertDialogTitle>
                   <AlertDialogDescription>
                     Apakah kamu yakin ingin me-revoke key <strong>{apiKey.name}</strong>?
                     <br />

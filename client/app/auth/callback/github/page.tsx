@@ -17,7 +17,7 @@ export default function GitHubCallbackPage() {
     const state = searchParams.get("state");
 
     if (!code) {
-      setError("Missing authorization code");
+      setError("Kode otorisasi tidak ditemukan");
       return;
     }
 

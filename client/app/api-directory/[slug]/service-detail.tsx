@@ -89,10 +89,10 @@ export function ApiServiceDetailPage({ slug }: { slug: string }) {
         {/* Tabs */}
         <Tabs defaultValue="overview" className="flex flex-col gap-4">
           <TabsList variant="line">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="endpoints">Endpoints</TabsTrigger>
-            <TabsTrigger value="pricing">Pricing</TabsTrigger>
-            <TabsTrigger value="docs">Docs</TabsTrigger>
+            <TabsTrigger value="overview">Ringkasan</TabsTrigger>
+            <TabsTrigger value="endpoints">Endpoint</TabsTrigger>
+            <TabsTrigger value="pricing">Harga</TabsTrigger>
+            <TabsTrigger value="docs">Dokumentasi</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
@@ -123,13 +123,13 @@ function OverviewTab({ service }: { service: ApiServiceDetail }) {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardPanel>
-            <p className="text-sm text-muted-foreground">Endpoints</p>
+            <p className="text-sm text-muted-foreground">Endpoint</p>
             <p className="text-2xl font-semibold mt-1">{service.endpoints.length}</p>
           </CardPanel>
         </Card>
         <Card>
           <CardPanel>
-            <p className="text-sm text-muted-foreground">Plans</p>
+            <p className="text-sm text-muted-foreground">Paket</p>
             <p className="text-2xl font-semibold mt-1">{service.plans.length}</p>
           </CardPanel>
         </Card>
@@ -142,7 +142,7 @@ function OverviewTab({ service }: { service: ApiServiceDetail }) {
       </div>
 
       <div>
-        <h3 className="font-medium mb-3">Endpoints</h3>
+        <h3 className="font-medium mb-3">Endpoint</h3>
         <div className="flex flex-col gap-2">
           {service.endpoints.slice(0, 5).map((ep) => (
             <div
@@ -199,7 +199,7 @@ function EndpointsTab({ endpoints }: { endpoints: ApiEndpoint[] }) {
               <CardPanel className="pt-0">
                 <details className="group">
                   <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">
-                    Response Example
+                    Contoh Response
                   </summary>
                   <pre className="mt-2 overflow-auto rounded-md bg-muted p-3 text-xs">
                     {JSON.stringify(ep.responseExample as object, null, 2)}
@@ -289,7 +289,7 @@ print(response.json())`;
   return (
     <div className="flex flex-col gap-6 pt-6">
       <div>
-        <h3 className="font-medium mb-3">Authentication</h3>
+        <h3 className="font-medium mb-3">Autentikasi</h3>
         <p className="text-sm text-muted-foreground">
           Semua request ke API ini memerlukan API key di header{" "}
           <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">X-API-Key</code>.
@@ -300,7 +300,7 @@ print(response.json())`;
       <Separator />
 
       <div>
-        <h3 className="font-medium mb-3">Code Examples</h3>
+        <h3 className="font-medium mb-3">Contoh Kode</h3>
         <div className="flex flex-col gap-4">
           <div>
             <p className="text-xs font-medium text-muted-foreground mb-1.5">cURL</p>
@@ -320,20 +320,20 @@ print(response.json())`;
       <Separator />
 
       <div>
-        <h3 className="font-medium mb-3">Error Codes</h3>
+        <h3 className="font-medium mb-3">Kode Error</h3>
         <div className="overflow-hidden rounded-lg border">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/50">
-                <th className="px-4 py-2 text-left font-medium">Code</th>
-                <th className="px-4 py-2 text-left font-medium">Description</th>
+                <th className="px-4 py-2 text-left font-medium">Kode</th>
+                <th className="px-4 py-2 text-left font-medium">Deskripsi</th>
               </tr>
             </thead>
             <tbody>
-              <tr className="border-b"><td className="px-4 py-2 font-mono">401</td><td className="px-4 py-2">API key missing atau invalid</td></tr>
-              <tr className="border-b"><td className="px-4 py-2 font-mono">403</td><td className="px-4 py-2">Tidak punya akses (plan upgrade required)</td></tr>
-              <tr className="border-b"><td className="px-4 py-2 font-mono">429</td><td className="px-4 py-2">Rate limit exceeded</td></tr>
-              <tr><td className="px-4 py-2 font-mono">500</td><td className="px-4 py-2">Internal server error</td></tr>
+              <tr className="border-b"><td className="px-4 py-2 font-mono">401</td><td className="px-4 py-2">API key tidak ada atau tidak valid</td></tr>
+              <tr className="border-b"><td className="px-4 py-2 font-mono">403</td><td className="px-4 py-2">Tidak punya akses (perlu upgrade paket)</td></tr>
+              <tr className="border-b"><td className="px-4 py-2 font-mono">429</td><td className="px-4 py-2">Batas request terlampaui</td></tr>
+              <tr><td className="px-4 py-2 font-mono">500</td><td className="px-4 py-2">Kesalahan server internal</td></tr>
             </tbody>
           </table>
         </div>

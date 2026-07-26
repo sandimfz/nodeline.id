@@ -36,7 +36,7 @@ export function AppSidebar() {
 			<SidebarHeader className="h-14 justify-center">
 				<SidebarMenuButton render={<Link href="/" />}>
 					<LogoIcon />
-					<span className="font-medium">Efferd</span>
+					<span className="font-medium">Nodeline</span>
 				</SidebarMenuButton>
 			</SidebarHeader>
 			<SidebarContent>
@@ -44,19 +44,19 @@ export function AppSidebar() {
 					<SidebarMenuItem className="flex items-center gap-2">
 						<SidebarMenuButton
 							className="min-w-8 bg-primary text-primary-foreground duration-200 ease-linear hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
-							tooltip="Quick Create"
+							tooltip="Buat Baru"
 						>
 							<IconPlus />
-							<span>New Conversation</span>
+							<span>Percakapan Baru</span>
 						</SidebarMenuButton>
 						<Button
-							aria-label="Search conversations"
+							aria-label="Cari percakapan"
 							className="size-8 group-data-[collapsible=icon]:opacity-0"
 							size="icon"
 							variant="outline"
 						>
 							<IconSearch />
-							<span className="sr-only">Search conversations</span>
+							<span className="sr-only">Cari percakapan</span>
 						</Button>
 					</SidebarMenuItem>
 				</SidebarGroup>

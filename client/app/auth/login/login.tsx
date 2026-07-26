@@ -182,7 +182,7 @@ function LeftPanel() {
             className="inline-flex w-fit items-center gap-1.5 rounded-md bg-black/20 px-2 py-1 font-mono text-[11px] text-white/65 uppercase tracking-[0.2em] backdrop-blur-sm transition-colors hover:text-white"
           >
             <IconChevronLeft className="size-3.5" />
-            Home
+            Beranda
           </Link>
           <ShuffleButton onClick={shuffle} paletteName={palette.name} />
         </div>
@@ -194,15 +194,15 @@ function LeftPanel() {
           >
             <span className="text-white">Oneline.</span>
             <br />
-            <span className="text-white/55">Less</span>{" "}
-            <span className="text-white">hassle,</span>{" "}
-            <span className="text-white/55">more done.</span>
+            <span className="text-white/55">Lebih</span>{" "}
+            <span className="text-white">simpel,</span>{" "}
+            <span className="text-white/55">lebih cepat.</span>
           </h2>
           <p
             className="mt-5 max-w-sm text-sm text-white/65 leading-relaxed"
             style={{ textShadow: "0 1px 16px rgba(0,0,0,0.55)" }}
           >
-            Auth, billing, emails — the boring week, already wired up.
+            Auth, billing, email — seminggu kerjaan, sudah siap pakai.
           </p>
         </div>
       </div>
@@ -391,7 +391,7 @@ function RightPanel() {
   return (
     <div className="relative flex min-h-[680px] flex-col overflow-y-auto bg-card text-foreground">
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-6 py-10 lg:py-14">
-        <BrandMark />
+        {/* <BrandMark /> */}
         <Heading />
         <OAuthRow />
         <MagicLinkButton />
@@ -403,15 +403,15 @@ function RightPanel() {
   );
 }
 
-function BrandMark() {
-  return (
-    <div className="flex items-center justify-center">
-      <div className="flex size-10 items-center justify-center rounded-xl border border-border bg-muted">
-        <IconUser className="size-5" />
-      </div>
-    </div>
-  );
-}
+// function BrandMark() {
+//   return (
+//     <div className="flex items-center justify-center">
+//       <div className="flex size-10 items-center justify-center rounded-xl border border-border bg-muted">
+//         <IconUser className="size-5" />
+//       </div>
+//     </div>
+//   );
+// }
 
 
 
@@ -422,7 +422,7 @@ function Heading() {
         Selamat Datang
       </h1>
       <p className="text-muted-foreground text-sm">
-        Sign in to your account to continue.
+        Masuk ke akun kamu untuk melanjutkan.
       </p>
     </div>
   );
@@ -478,7 +478,7 @@ function MagicLinkButton() {
   return (
     <Button variant="outline" size="lg" className="mt-2.5 w-full">
       <IconMail />
-      Sign in with Magic Link
+      Masuk dengan Magic Link
     </Button>
   );
 }
@@ -487,7 +487,7 @@ function OrSeparator() {
   return (
     <div className="my-6 flex items-center gap-3">
       <Separator className="flex-1" />
-      <span className="text-[11px] text-muted-foreground">Or</span>
+      <span className="text-[11px] text-muted-foreground">Atau</span>
       <Separator className="flex-1" />
     </div>
   );
@@ -607,7 +607,7 @@ function SignInForm() {
       </Field>
 
       <Button type="submit" size="lg" className="mt-2" disabled={login.isPending}>
-        {login.isPending ? "Signing in..." : "Sign in"}
+        {login.isPending ? "Masuk..." : "Masuk"}
       </Button>
     </form>
   );
@@ -617,16 +617,16 @@ function FooterLinks() {
   return (
     <div className="mt-5 flex items-baseline justify-between gap-4 text-sm">
       <p className="whitespace-nowrap text-muted-foreground">
-        Don't have an account?{" "}
+        Belum punya akun?{" "}
         <Link href="/auth/register" className="text-foreground hover:underline">
-          Sign up
+          Daftar
         </Link>
       </p>
       <Link
         href="#"
         className="whitespace-nowrap text-muted-foreground hover:text-foreground hover:underline"
       >
-        Forgot password?
+        Lupa password?
       </Link>
     </div>
   );

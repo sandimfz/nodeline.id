@@ -14,7 +14,7 @@ import {
 
 const linksPro = [
   {
-    group: "Product",
+    group: "Produk",
     items: [
       {
         title: "AI",
@@ -45,7 +45,7 @@ const linksPro = [
         href: "#",
       },
       {
-        title: "Security",
+        title: "Keamanan",
         href: "#",
       },
       {
@@ -53,7 +53,7 @@ const linksPro = [
         href: "#",
       },
       {
-        title: "Domains",
+        title: "Domain",
         href: "#",
       },
     ],
@@ -62,46 +62,46 @@ const linksPro = [
 
 const linksRes = [
   {
-    group: "Resources",
+    group: "Sumber Daya",
     items: [
       {
-        title: "Docs",
+        title: "Dokumentasi",
         href: "#",
       },
       {
-        title: "Guides",
+        title: "Panduan",
         href: "#",
       },
       {
-        title: "Academy",
+        title: "Akademi",
         href: "#",
       },
       {
-        title: "Help",
+        title: "Bantuan",
         href: "#",
       },
       {
-        title: "Integrations",
+        title: "Integrasi",
         href: "#",
       },
       {
-        title: "Pricing",
+        title: "Harga",
         href: "#",
       },
       {
-        title: "Resources",
+        title: "Sumber Daya",
         href: "#",
       },
       {
-        title: "Solution Partners",
+        title: "Mitra Solusi",
         href: "#",
       },
       {
-        title: "Startups",
+        title: "Startup",
         href: "#",
       },
       {
-        title: "Templates",
+        title: "Template",
         href: "#",
       },
     ],
@@ -110,10 +110,10 @@ const linksRes = [
 
 const linksCom = [
   {
-    group: "Company",
+    group: "Perusahaan",
     items: [
       {
-        title: "About",
+        title: "Tentang",
         href: "#",
       },
       {
@@ -121,7 +121,7 @@ const linksCom = [
         href: "#",
       },
       {
-        title: "Careers",
+        title: "Karir",
         href: "#",
       },
       {
@@ -129,19 +129,19 @@ const linksCom = [
         href: "#",
       },
       {
-        title: "Contact Us",
+        title: "Hubungi Kami",
         href: "#",
       },
       {
-        title: "Customers",
+        title: "Pelanggan",
         href: "#",
       },
       {
-        title: "Events",
+        title: "Acara",
         href: "#",
       },
       {
-        title: "Partners",
+        title: "Mitra",
         href: "#",
       },
       {
@@ -149,7 +149,7 @@ const linksCom = [
         href: "#",
       },
       {
-        title: "Privacy Policy",
+        title: "Kebijakan Privasi",
         href: "#",
       },
     ],
@@ -313,7 +313,7 @@ export function Footer() {
             </div>
             <div className="grid gap-3">
               <div className="space-y-3 text-sm">
-                <span className="block font-medium">Social</span>
+                <span className="block font-medium">Sosial</span>
                 <Link
                   href="#"
                   className="text-muted-foreground hover:text-primary block duration-150"

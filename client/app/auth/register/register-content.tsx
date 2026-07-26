@@ -118,7 +118,7 @@ function LeftPanel() {
             className="inline-flex w-fit items-center gap-1.5 rounded-md bg-black/20 px-2 py-1 font-mono text-[11px] text-white/65 uppercase tracking-[0.2em] backdrop-blur-sm transition-colors hover:text-white"
           >
             <IconChevronLeft className="size-3.5" />
-            Sign In
+            Masuk
           </Link>
           <ShuffleButton onClick={shuffle} paletteName={palette.name} />
         </div>
@@ -129,15 +129,15 @@ function LeftPanel() {
           >
             <span className="text-white">Oneline.</span>
             <br />
-            <span className="text-white/55">Less</span>{" "}
-            <span className="text-white">hassle,</span>{" "}
-            <span className="text-white/55">more done.</span>
+            <span className="text-white/55">Lebih</span>{" "}
+            <span className="text-white">simpel,</span>{" "}
+            <span className="text-white/55">lebih cepat.</span>
           </h2>
           <p
             className="mt-5 max-w-sm text-sm text-white/65 leading-relaxed"
             style={{ textShadow: "0 1px 16px rgba(0,0,0,0.55)" }}
           >
-            Join thousands of developers already building with Nodeline.
+            Bergabung dengan ribuan developer yang sudah membangun dengan Nodeline.
           </p>
         </div>
       </div>
@@ -249,7 +249,7 @@ function RightPanel() {
   return (
     <div className="relative flex min-h-[680px] flex-col overflow-y-auto bg-card text-foreground">
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-6 py-10 lg:py-14">
-        <BrandMark />
+        {/* <BrandMark /> */}
         <Heading />
         <RegisterForm />
         <FooterLinks />
@@ -258,15 +258,15 @@ function RightPanel() {
   );
 }
 
-function BrandMark() {
-  return (
-    <div className="flex items-center justify-center">
-      <div className="flex size-10 items-center justify-center rounded-xl border border-border bg-muted">
-        <IconUser className="size-5" />
-      </div>
-    </div>
-  );
-}
+// function BrandMark() {
+//   return (
+//     <div className="flex items-center justify-center">
+//       <div className="flex size-10 items-center justify-center rounded-xl border border-border bg-muted">
+//         <IconUser className="size-5" />
+//       </div>
+//     </div>
+//   );
+// }
 
 function Heading() {
   return (
