@@ -38,7 +38,7 @@ export function ProductsPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4">
         <h1 className="text-2xl font-semibold tracking-tight">Produk</h1>
         <div className="grid gap-4 md:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
@@ -68,7 +68,7 @@ export function ProductsPage() {
     ).length ?? 0;
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -78,9 +78,11 @@ export function ProductsPage() {
           </p>
         </div>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger className="inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding bg-primary text-primary-foreground text-sm font-medium whitespace-nowrap h-9 gap-1.5 px-2.5 transition-all outline-none select-none hover:bg-primary/80 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50">
-            <Plus className="mr-1.5 size-4" />
-            Tambah Produk
+          <DialogTrigger asChild>
+            <Button>
+              <Plus data-icon="inline-start" />
+              Tambah Produk
+            </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-lg">
             <DialogHeader>
@@ -124,7 +126,7 @@ export function ProductsPage() {
             </Badge>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-semibold text-emerald-600 dark:text-emerald-400">
+            <p className="text-3xl font-semibold text-primary">
               {stockCount}
             </p>
           </CardContent>

@@ -7,7 +7,6 @@ import {
   Package,
   TrendingUp,
   ExternalLink,
-  RefreshCw,
   Check,
 } from "lucide-react";
 import {
@@ -19,6 +18,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
 import { useProducts, useConfirmPayment } from "@/features/marketplace/hooks";
 import { ADMIN_BASE } from "@/lib/config";
 import { usePendingOrders } from "@/features/marketplace/hooks";
@@ -47,7 +47,7 @@ function ProductOrderCard({
   ).length;
 
   return (
-    <Card className="border-l-4 border-l-amber-500">
+    <Card>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
@@ -89,7 +89,7 @@ function ProductOrderCard({
           </Link>
         </div>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="flex flex-col gap-2">
         {pendingOrders.map((order) => (
           <div
             key={order.orderId}
@@ -138,11 +138,11 @@ function ProductOrderCard({
                 >
                   {confirmPayment.isPending &&
                   confirmingId === order.orderId ? (
-                    <RefreshCw className="size-3 animate-spin" />
+                    <Spinner data-icon="inline-start" />
                   ) : (
-                    <Check className="size-3" />
+                    <Check data-icon="inline-start" />
                   )}
-                  <span className="ml-1">Konfirmasi</span>
+                  Konfirmasi
                 </Button>
               )}
             </div>
@@ -159,7 +159,7 @@ export function OrdersPage() {
 
   if (productsLoading) {
     return (
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4">
         <h1 className="text-2xl font-semibold tracking-tight">Pesanan</h1>
         {Array.from({ length: 3 }).map((_, i) => (
           <Skeleton key={i} className="h-32 rounded-xl" />
@@ -172,7 +172,7 @@ export function OrdersPage() {
   const activeProducts = products?.filter((p) => p.isActive) ?? [];
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Pesanan</h1>
@@ -222,7 +222,7 @@ export function OrdersPage() {
           <CardContent>
             <Link to={`${ADMIN_BASE}/dashboard/products`}>
               <Button variant="outline" size="sm" className="w-full text-xs">
-                <ShoppingCart className="mr-1.5 size-3.5" />
+                <ShoppingCart data-icon="inline-start" />
                 Kelola Produk
               </Button>
             </Link>
@@ -231,7 +231,7 @@ export function OrdersPage() {
       </div>
 
       {/* Orders list per product */}
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold tracking-tight">
             Pesanan per Produk
@@ -262,7 +262,7 @@ export function OrdersPage() {
         {(!productsWithOrders || productsWithOrders.length === 0) && (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <CheckCircle2 className="mb-3 size-10 text-emerald-500" />
+              <CheckCircle2 className="mb-3 size-10 text-muted-foreground" />
               <p className="text-lg font-medium">
                 Tidak ada pesanan
               </p>

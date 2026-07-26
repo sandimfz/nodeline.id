@@ -5,12 +5,13 @@ import {
   PackagePlus,
   ClipboardList,
   Settings,
-  RefreshCw,
+
   Eye,
   ImageIcon,
   ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -64,7 +65,7 @@ export function ProductDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="flex flex-col gap-6">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-64 w-full rounded-xl" />
       </div>
@@ -89,7 +90,7 @@ export function ProductDetailPage() {
     `Rp ${cents.toLocaleString("id-ID")}`;
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       {/* Header */}
       <div>
         <Link
@@ -284,7 +285,7 @@ export function ProductDetailPage() {
                   Restock dari Teks
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="restock-text">
                     Konten (satu baris per key/link)
@@ -323,12 +324,12 @@ export function ProductDetailPage() {
                 >
                   {restockProduct.isPending ? (
                     <>
-                      <RefreshCw className="mr-1.5 size-4 animate-spin" />
+                      <Spinner data-icon="inline-start" />
                       Menyimpan...
                     </>
                   ) : (
                     <>
-                      <PackagePlus className="mr-1.5 size-4" />
+                      <PackagePlus data-icon="inline-start" />
                       Restock
                     </>
                   )}
@@ -344,7 +345,7 @@ export function ProductDetailPage() {
                   Tambah 1 Unit Manual
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="manual-content">Isi konten</Label>
                   <Textarea
@@ -380,7 +381,7 @@ export function ProductDetailPage() {
                 >
                   {manualRestock.isPending ? (
                     <>
-                      <RefreshCw className="mr-1.5 size-4 animate-spin" />
+                      <Spinner data-icon="inline-start" />
                       Menyimpan...
                     </>
                   ) : (
@@ -515,7 +516,7 @@ export function ProductDetailPage() {
                   Tidak ada pesanan pending untuk produk ini
                 </p>
               ) : (
-                <div className="space-y-4">
+                <div className="flex flex-col gap-4">
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>

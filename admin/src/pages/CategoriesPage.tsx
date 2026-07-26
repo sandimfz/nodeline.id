@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Plus, Trash2, Tag, Hash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -18,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { useToast } from "@/lib/toast";
 import { useCategories, useCreateCategory, useDeleteCategory } from "@/features/marketplace/hooks";
 
@@ -51,7 +51,7 @@ export function CategoriesPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Kategori</h1>
@@ -60,17 +60,19 @@ export function CategoriesPage() {
           </p>
         </div>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger className="inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding bg-primary text-primary-foreground text-sm font-medium whitespace-nowrap h-9 gap-1.5 px-2.5 transition-all outline-none select-none hover:bg-primary/80 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50">
-            <Plus className="mr-1.5 size-4" />
+          <DialogTrigger
+            render={<Button />}
+          >
+            <Plus data-icon="inline-start" />
             Tambah Kategori
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Tambah Kategori Baru</DialogTitle>
             </DialogHeader>
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="cat-name">Nama Kategori</Label>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="cat-name">Nama Kategori</FieldLabel>
                 <Input
                   id="cat-name"
                   placeholder="Contoh: API Key, Template, Ebook"
@@ -80,14 +82,14 @@ export function CategoriesPage() {
                     if (e.key === "Enter") handleCreate();
                   }}
                 />
-              </div>
+              </Field>
               <Button
                 onClick={handleCreate}
                 disabled={createCategory.isPending || !newName.trim()}
               >
                 {createCategory.isPending ? "Menyimpan..." : "Simpan"}
               </Button>
-            </div>
+            </FieldGroup>
           </DialogContent>
         </Dialog>
       </div>
@@ -125,7 +127,7 @@ export function CategoriesPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               {Array.from({ length: 3 }).map((_, i) => (
                 <Skeleton key={i} className="h-12 w-full rounded-lg" />
               ))}
@@ -198,7 +200,7 @@ export function CategoriesPage() {
                           }}
                           disabled={deleteCategory.isPending}
                         >
-                          <Trash2 className="size-3.5" />
+                          <Trash2 />
                         </Button>
                       </td>
                     </tr>

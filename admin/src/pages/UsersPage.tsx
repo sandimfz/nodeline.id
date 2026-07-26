@@ -56,7 +56,7 @@ export function UsersPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4">
         <h1 className="text-2xl font-semibold tracking-tight">Pengguna</h1>
         <Skeleton className="h-32 w-full rounded-xl" />
         <Skeleton className="h-64 w-full rounded-xl" />
@@ -65,7 +65,7 @@ export function UsersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Pengguna</h1>
@@ -106,10 +106,10 @@ export function UsersPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Email Terverifikasi</CardTitle>
-            <Calendar className="size-4 text-emerald-500" />
+            <Calendar className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-semibold text-emerald-600 dark:text-emerald-400">
+            <p className="text-3xl font-semibold text-primary">
               {stats.verified}
             </p>
           </CardContent>
@@ -189,7 +189,7 @@ export function UsersPage() {
                         {user.isEmailVerified ? (
                           <Badge
                             variant="default"
-                            className="bg-emerald-600 text-[10px] hover:bg-emerald-600"
+                            className="text-[10px]"
                           >
                             Terverifikasi
                           </Badge>

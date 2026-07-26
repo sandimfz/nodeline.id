@@ -1,7 +1,8 @@
 import { useState, useRef, type FormEvent } from "react";
-import { Plus, Pencil, Trash2, RefreshCw, Upload, X, Eye, EyeOff, Banknote, QrCode } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, X, Eye, EyeOff, Banknote, QrCode } from "lucide-react";
 import { useToast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -62,7 +63,7 @@ function PaymentMethodCard({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           {method.type === "qris" ? (
-            <QrCode className="size-4 text-emerald-500" />
+            <QrCode className="size-4 text-primary" />
           ) : (
             <Banknote className="size-4 text-blue-500" />
           )}
@@ -246,14 +247,15 @@ function PaymentMethodForm({
             >
               {uploadImage.isPending ? (
                 <>
-                  <RefreshCw className="mr-1.5 size-3 animate-spin" />
+                  <Spinner data-icon="inline-start" />
                   Mengupload...
                 </>
               ) : (
-                <>                        <Upload className="mr-1.5 size-3" />
-                            Upload Gambar
-                          </>
-                        )}
+                <>
+                  <Upload data-icon="inline-start" />
+                  Upload Gambar
+                </>
+              )}
                       </Button>
                     </div>
                   )}
@@ -340,7 +342,7 @@ export function PaymentMethodsPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4">
         <h1 className="text-2xl font-semibold tracking-tight">Metode Pembayaran</h1>
         {Array.from({ length: 3 }).map((_, i) => (
           <Skeleton key={i} className="h-24 rounded-xl" />
@@ -350,7 +352,7 @@ export function PaymentMethodsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -363,7 +365,7 @@ export function PaymentMethodsPage() {
         </div>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="mr-1.5 size-4" />
+            <Plus data-icon="inline-start" />
             Tambah Metode
           </Button>
           <DialogContent className="sm:max-w-md">
@@ -406,10 +408,10 @@ export function PaymentMethodsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Aktif</CardTitle>
-            <Eye className="size-4 text-emerald-500" />
+            <Eye className="size-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-semibold text-emerald-600 dark:text-emerald-400">
+            <p className="text-3xl font-semibold text-primary">
               {methods?.filter((m) => m.isActive).length ?? 0}
             </p>
           </CardContent>
@@ -439,7 +441,7 @@ export function PaymentMethodsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           {methods?.map((method) => (
             <PaymentMethodCard
               key={method.id}

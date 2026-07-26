@@ -3,6 +3,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useProducts } from "@/features/marketplace/hooks";
 import { useAllOrders } from "@/features/marketplace/hooks";
 import { useUsers } from "@/features/auth/hooks";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 export function DashboardPage() {
   const user = useAuthStore((s) => s.user);
@@ -23,7 +24,7 @@ export function DashboardPage() {
   const adminUsers = allUsers?.filter((u) => u.role === "god").length ?? 0;
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
           Selamat datang, {user?.name ?? "Admin"}
@@ -84,17 +85,15 @@ export function DashboardPage() {
 
       {/* Low Stock Alert */}
       {outOfStock > 0 && (
-        <div className="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-          <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-500" />
-          <div className="text-sm">
-            <p className="font-medium text-amber-700 dark:text-amber-400">
-              {outOfStock} produk kehabisan stok
-            </p>
-            <p className="mt-1 text-muted-foreground">
-              Segera restock produk yang stoknya habis agar tidak kehilangan penjualan.
-            </p>
-          </div>
-        </div>
+        <Alert variant="destructive">
+          <AlertTriangle />
+          <AlertTitle>
+            {outOfStock} produk kehabisan stok
+          </AlertTitle>
+          <AlertDescription>
+            Segera restock produk yang stoknya habis agar tidak kehilangan penjualan.
+          </AlertDescription>
+        </Alert>
       )}
 
       {/* Recent Activity */}
@@ -104,7 +103,7 @@ export function DashboardPage() {
           {pendingOrders > 0 ? (
             <p className="mt-2 text-3xl font-semibold text-destructive">{pendingOrders}</p>
           ) : (
-            <p className="mt-3 text-sm text-muted-foreground"> Semua pesanan sudah dikonfirmasi</p>
+            <p className="mt-3 text-sm text-muted-foreground">Semua pesanan sudah dikonfirmasi</p>
           )}
           {pendingOrders > 0 && (
             <p className="mt-1 text-xs text-muted-foreground">
@@ -117,13 +116,13 @@ export function DashboardPage() {
           <h3 className="text-sm font-medium">Pesanan Dibayar — Nunggu Stok</h3>
           {paidOrders > 0 ? (
             <>
-              <p className="mt-2 text-3xl font-semibold text-amber-600 dark:text-amber-400">{paidOrders}</p>
+              <p className="mt-2 text-3xl font-semibold text-destructive">{paidOrders}</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 Restock produk terkait untuk auto-fulfill pesanan ini
               </p>
             </>
           ) : (
-            <p className="mt-3 text-sm text-muted-foreground"> Tidak ada pesanan yang menunggu stok</p>
+            <p className="mt-3 text-sm text-muted-foreground">Tidak ada pesanan yang menunggu stok</p>
           )}
         </div>
       </div>

@@ -7,13 +7,14 @@ import {
   Send,
   Search,
   ExternalLink,
-  RefreshCw,
+
   Check,
   XCircle,
   ArrowLeftRight,
   AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -95,7 +96,7 @@ export function AllOrdersPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4">
         <h1 className="text-2xl font-semibold tracking-tight">Semua Pesanan</h1>
         {Array.from({ length: 5 }).map((_, i) => (
           <Skeleton key={i} className="h-20 rounded-xl" />
@@ -105,7 +106,7 @@ export function AllOrdersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
@@ -142,16 +143,16 @@ export function AllOrdersPage() {
             <Send className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-semibold text-amber-600 dark:text-amber-400">{stats.paid}</p>
+            <p className="text-3xl font-semibold text-destructive">{stats.paid}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Selesai</CardTitle>
-            <CheckCircle2 className="size-4 text-emerald-500" />
+            <CheckCircle2 className="size-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-semibold text-emerald-600 dark:text-emerald-400">{stats.fulfilled}</p>
+            <p className="text-3xl font-semibold text-primary">{stats.fulfilled}</p>
           </CardContent>
         </Card>
         <Card className="opacity-75">
@@ -228,14 +229,14 @@ export function AllOrdersPage() {
       {filteredOrders.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <CheckCircle2 className="mb-3 size-10 text-emerald-500" />
+            <CheckCircle2 className="mb-3 size-10 text-primary" />
             <p className="text-lg font-medium">
               {filter === "all" ? "Belum ada pesanan" : "Tidak ada pesanan dengan status ini"}
             </p>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           {filteredOrders.map((order) => (
             <div
               key={order.id}
@@ -299,7 +300,7 @@ export function AllOrdersPage() {
                       }}
                     >
                       {confirmPayment.isPending && confirmingId === order.id ? (
-                        <RefreshCw className="size-3 animate-spin" />
+                        <Spinner data-icon="inline-start" />
                       ) : (
                         <Check className="size-3" />
                       )}
@@ -327,7 +328,7 @@ export function AllOrdersPage() {
                           </AlertDialogDescription>
                         </AlertDialogHeader>
 
-                        <div className="space-y-2 px-6">
+                        <div className="flex flex-col gap-2 px-6">
                           <Label htmlFor="cancel-reason-list" className="text-sm font-medium">
                             Alasan Pembatalan
                           </Label>
@@ -368,12 +369,12 @@ export function AllOrdersPage() {
                           >
                             {cancelOrder.isPending && cancellingId === order.id ? (
                               <>
-                                <RefreshCw className="mr-1.5 size-4 animate-spin" />
+                                <Spinner data-icon="inline-start" />
                                 Membatalkan...
                               </>
                             ) : (
                               <>
-                                <XCircle className="mr-1.5 size-4" />
+                                <XCircle data-icon="inline-start" />
                                 Ya, Batalkan
                               </>
                             )}
@@ -406,7 +407,7 @@ export function AllOrdersPage() {
                         </AlertDialogDescription>
                       </AlertDialogHeader>
 
-                      <div className="space-y-2 px-6">
+                      <div className="flex flex-col gap-2 px-6">
                         <Label htmlFor="cancel-reason-paid" className="text-sm font-medium">
                           Alasan Pembatalan
                         </Label>
@@ -447,12 +448,12 @@ export function AllOrdersPage() {
                         >
                           {cancelOrder.isPending && cancellingId === order.id ? (
                             <>
-                              <RefreshCw className="mr-1.5 size-4 animate-spin" />
+                              <Spinner data-icon="inline-start" />
                               Membatalkan...
                             </>
                           ) : (
                             <>
-                              <XCircle className="mr-1.5 size-4" />
+                              <XCircle data-icon="inline-start" />
                               Ya, Batalkan
                             </>
                           )}

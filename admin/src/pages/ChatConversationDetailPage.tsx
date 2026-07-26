@@ -4,9 +4,9 @@ import {
   ArrowLeftIcon,
   SendIcon,
   XCircleIcon,
-  Loader2Icon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { Input } from "@/components/ui/input";
 import {
   useMessages,
@@ -79,7 +79,7 @@ export function ChatConversationDetailPage() {
           disabled={closing}
           className="text-destructive"
         >
-          <XCircleIcon className="mr-1 size-4" />
+          <XCircleIcon data-icon="inline-start" />
           Tutup
         </Button>
       </div>
@@ -88,7 +88,7 @@ export function ChatConversationDetailPage() {
       <div className="flex-1 overflow-y-auto px-4 py-4">
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
-            <Loader2Icon className="size-5 animate-spin text-muted-foreground" />
+            <Spinner className="size-5 text-muted-foreground" />
           </div>
         ) : displayMessages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
@@ -154,7 +154,7 @@ export function ChatConversationDetailPage() {
           className="size-9 shrink-0"
         >
           {sending ? (
-            <Loader2Icon className="size-4 animate-spin" />
+            <Spinner />
           ) : (
             <SendIcon className="size-4" />
           )}

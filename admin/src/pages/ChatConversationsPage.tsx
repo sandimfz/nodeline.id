@@ -20,7 +20,7 @@ export function ChatConversationsPage() {
   const closedConversations = conversations.filter((c) => c.status === "CLOSED");
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-semibold">Percakapan</h1>
         <p className="text-sm text-muted-foreground">
@@ -32,14 +32,14 @@ export function ChatConversationsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <MessageCircleIcon className="size-4 text-emerald-500" />
+            <MessageCircleIcon className="size-4 text-primary" />
             Aktif
             <Badge variant="secondary" className="ml-auto">
               {openConversations.length}
             </Badge>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="flex flex-col gap-2">
           {openConversations.length === 0 ? (
             <p className="py-4 text-center text-sm text-muted-foreground">
               Tidak ada percakapan aktif
@@ -90,7 +90,7 @@ export function ChatConversationsPage() {
               </Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="flex flex-col gap-2">
             {closedConversations.map((conv) => (
               <button
                 key={conv.id}

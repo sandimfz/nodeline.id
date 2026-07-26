@@ -1,6 +1,7 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, ExternalLink, Check, RefreshCw, ImageIcon, Package, User, Calendar, XCircle, ArrowLeftRight, AlertTriangle } from "lucide-react";
+import { ArrowLeft, ExternalLink, Check, ImageIcon, Package, User, Calendar, XCircle, ArrowLeftRight, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -137,7 +138,7 @@ export function OrderDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="flex flex-col gap-6">
         <Skeleton className="h-6 w-48" />
         <Skeleton className="h-64 w-full rounded-xl" />
         <Skeleton className="h-48 w-full rounded-xl" />
@@ -174,7 +175,7 @@ export function OrderDetailPage() {
   const fulfilledCount = order.items.filter((i) => i.fulfilled).length;
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       {/* Back */}
       <Link
         to={`${ADMIN_BASE}/dashboard/orders`}
@@ -223,12 +224,12 @@ export function OrderDetailPage() {
             >
               {confirmPayment.isPending ? (
                 <>
-                  <RefreshCw className="mr-1.5 size-4 animate-spin" />
+                  <Spinner data-icon="inline-start" />
                   Mengonfirmasi...
                 </>
               ) : (
                 <>
-                  <Check className="mr-1.5 size-4" />
+                  <Check data-icon="inline-start" />
                   Konfirmasi Pembayaran
                 </>
               )}
@@ -244,7 +245,7 @@ export function OrderDetailPage() {
             >
               <AlertDialogTrigger render={
                 <Button variant="outline" className="border-destructive/50 text-destructive hover:bg-destructive/10">
-                  <XCircle className="mr-1.5 size-4" />
+                  <XCircle data-icon="inline-start" />
                   Batalkan Pesanan
                 </Button>
               } />
@@ -260,7 +261,7 @@ export function OrderDetailPage() {
                 </AlertDialogHeader>
 
                 {/* Reason input */}
-                <div className="space-y-2 px-6">
+                <div className="flex flex-col gap-2 px-6">
                   <Label htmlFor="cancel-reason" className="text-sm font-medium">
                     Alasan Pembatalan
                   </Label>
@@ -307,12 +308,12 @@ export function OrderDetailPage() {
                   >
                     {cancelOrder.isPending ? (
                       <>
-                        <RefreshCw className="mr-1.5 size-4 animate-spin" />
+                        <Spinner data-icon="inline-start" />
                         Memproses...
                       </>
                     ) : (
                       <>
-                        <XCircle className="mr-1.5 size-4" />
+                        <XCircle data-icon="inline-start" />
                         Ya, Batalkan
                       </>
                     )}
@@ -331,7 +332,7 @@ export function OrderDetailPage() {
             >
               <AlertDialogTrigger render={
                 <Button variant="outline" className="border-destructive/50 text-destructive hover:bg-destructive/10">
-                  <ArrowLeftRight className="mr-1.5 size-4" />
+                  <ArrowLeftRight data-icon="inline-start" />
                   Refund Pesanan
                 </Button>
               } />
@@ -347,7 +348,7 @@ export function OrderDetailPage() {
                 </AlertDialogHeader>
 
                 {/* Reason input */}
-                <div className="space-y-2 px-6">
+                <div className="flex flex-col gap-2 px-6">
                   <Label htmlFor="refund-reason" className="text-sm font-medium">
                     Alasan Refund
                   </Label>
@@ -392,12 +393,12 @@ export function OrderDetailPage() {
                   >
                     {cancelOrder.isPending ? (
                       <>
-                        <RefreshCw className="mr-1.5 size-4 animate-spin" />
+                        <Spinner data-icon="inline-start" />
                         Memproses...
                       </>
                     ) : (
                       <>
-                        <ArrowLeftRight className="mr-1.5 size-4" />
+                        <ArrowLeftRight data-icon="inline-start" />
                         Ya, Refund
                       </>
                     )}
@@ -420,7 +421,7 @@ export function OrderDetailPage() {
               Informasi Pembeli
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm">
+          <CardContent className="flex flex-col gap-3 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Nama</span>
               <span className="font-medium">{order.buyerName}</span>
@@ -464,7 +465,7 @@ export function OrderDetailPage() {
               Informasi Pembayaran
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm">
+          <CardContent className="flex flex-col gap-3 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Status</span>
               <Badge variant={statusInfo.variant} className="text-[10px]">

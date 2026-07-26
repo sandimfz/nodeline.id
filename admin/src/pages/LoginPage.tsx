@@ -1,8 +1,8 @@
 import { type FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Field, FieldGroup, FieldLabel, FieldError } from "@/components/ui/field";
 import { useLogin } from "@/features/auth/hooks";
 import { loginSchema } from "@/features/auth/schema";
 import { extractApiError } from "@/lib/api-client";
@@ -72,44 +72,46 @@ export function LoginPage() {
           <CardDescription>Masuk untuk mengelola marketplace</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={onSubmit} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="login-email">Email</Label>
-              <Input
-                id="login-email"
-                type="email"
-                required
-                placeholder="admin@nodeline.id"
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={fieldErrors.email ? "border-destructive" : ""}
-              />
-              {fieldErrors.email && (
-                <p className="text-xs text-destructive">{fieldErrors.email}</p>
-              )}
-            </div>
+          <form onSubmit={onSubmit}>
+            <FieldGroup>
+              <Field data-invalid={fieldErrors.email ? true : undefined}>
+                <FieldLabel htmlFor="login-email">Email</FieldLabel>
+                <Input
+                  id="login-email"
+                  type="email"
+                  required
+                  placeholder="admin@nodeline.id"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={fieldErrors.email ? "border-destructive" : ""}
+                />
+                {fieldErrors.email && (
+                  <FieldError>{fieldErrors.email}</FieldError>
+                )}
+              </Field>
 
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="login-password">Password</Label>
-              <Input
-                id="login-password"
-                type="password"
-                required
-                placeholder="••••••••"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={fieldErrors.password ? "border-destructive" : ""}
-              />
-              {fieldErrors.password && (
-                <p className="text-xs text-destructive">{fieldErrors.password}</p>
-              )}
-            </div>
+              <Field data-invalid={fieldErrors.password ? true : undefined}>
+                <FieldLabel htmlFor="login-password">Password</FieldLabel>
+                <Input
+                  id="login-password"
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={fieldErrors.password ? "border-destructive" : ""}
+                />
+                {fieldErrors.password && (
+                  <FieldError>{fieldErrors.password}</FieldError>
+                )}
+              </Field>
 
-            <Button type="submit" size="lg" className="mt-2" disabled={login.isPending}>
-              {login.isPending ? "Memproses..." : "Masuk"}
-            </Button>
+              <Button type="submit" size="lg" className="mt-2" disabled={login.isPending}>
+                {login.isPending ? "Memproses..." : "Masuk"}
+              </Button>
+            </FieldGroup>
           </form>
         </CardContent>
       </Card>

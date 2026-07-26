@@ -1,10 +1,11 @@
 import { type FormEvent, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Upload, X, RefreshCw } from "lucide-react";
+import { Upload, X } from "lucide-react";
 import { createProductSchema } from "../schema";
 import type { CreateProductInput } from "../types";
 import { useCategories } from "../hooks";
@@ -280,18 +281,18 @@ export function ProductForm({
           >
             {uploadMutation?.isPending ? (
               <>
-                <RefreshCw className="mr-1.5 size-4 animate-spin" />
+                <Spinner data-icon="inline-start" />
                 Mengupload...
               </>
             ) : (
               <>
-                <Upload className="mr-1.5 size-4" />
+                <Upload data-icon="inline-start" />
                 Pilih File
               </>
             )}
           </Button>
           {uploadMutation?.data && (
-            <p className="mt-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+            <p className="mt-1.5 text-xs text-primary">
                Gambar berhasil diupload!
             </p>
           )}

@@ -3,6 +3,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useUpdateProfile } from "@/features/auth/hooks";
 import { extractApiError } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -14,7 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Shield, RefreshCw, Save, User } from "lucide-react";
+import { Shield, Save, User } from "lucide-react";
 import { useToast } from "@/lib/toast";
 
 export function SettingsPage() {
@@ -47,7 +48,7 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Pengaturan</h1>
         <p className="text-sm text-muted-foreground">
@@ -104,12 +105,12 @@ export function SettingsPage() {
               >
                 {updateProfile.isPending ? (
                   <>
-                    <RefreshCw className="mr-1.5 size-4 animate-spin" />
+                    <Spinner data-icon="inline-start" />
                     Menyimpan...
                   </>
                 ) : (
                   <>
-                    <Save className="mr-1.5 size-4" />
+                    <Save data-icon="inline-start" />
                     Simpan Perubahan
                   </>
                 )}
@@ -130,7 +131,7 @@ export function SettingsPage() {
               Detail akun admin Anda
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm">
+          <CardContent className="flex flex-col gap-3 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Role</span>
               <Badge variant="default" className="text-[10px]">
