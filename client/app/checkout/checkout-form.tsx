@@ -1,15 +1,11 @@
 "use client";
 
-import { type FormEvent, useState, useRef, useEffect } from "react";
+import { type FormEvent, useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ShoppingBagIcon,
   ArrowLeft,
-  Upload,
-  X,
-  RefreshCw,
-  CheckCircle2,
   AlertCircle,
   QrCode,
   Banknote,
@@ -25,6 +21,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
+import {
+  FileUpload,
+  type FileUploadItem,
+} from "@/components/motion/file-upload";
 import { useToast } from "@/lib/toast";
 import {
   useProduct,
@@ -56,7 +57,7 @@ function PaymentMethodsSection() {
         <CardContent>
           <div className="flex items-center gap-3">
             <Skeleton className="h-12 w-12 rounded-lg" />
-            <div className="space-y-1.5">
+            <div className="flex flex-col gap-1.5">
               <Skeleton className="h-4 w-32" />
               <Skeleton className="h-3 w-24" />
             </div>
@@ -122,7 +123,7 @@ function PaymentMethodsSection() {
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-3 py-2">
+                  <div className="flex flex-col gap-3 py-2">
                     <div className="overflow-hidden rounded-lg border border-border">
                       <img
                         src={method.imageUrl}
@@ -170,11 +171,11 @@ export function CheckoutForm() {
   const checkout = useCheckout();
   const upload = useUploadPaymentProof();
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [whatsapp, setWhatsapp] = useState("");
   const [paymentNote, setPaymentNote] = useState("");
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadItems, setUploadItems] = useState<FileUploadItem[]>([]);
+  const uploadRef = useRef<{ file: File; id: string } | null>(null);
 
   // Redirect if no product selected
   useEffect(() => {
@@ -186,29 +187,102 @@ export function CheckoutForm() {
   const isAvailable = product?.stockStatus === "AVAILABLE" && product?.isActive;
   const totalCents = product ? product.priceCents * quantity : 0;
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadError(null);
+  const handleFilesAdded = useCallback(
+    (added: FileUploadItem[], files: File[]) => {
+      const file = files[0];
+      const item = added[0];
+      if (!file || !item) return;
 
-    upload.mutate(
-      { file },
-      {
-        onSuccess: (res) => {
-          setUploadedUrl(res.url);
-          toast.success("Bukti bayar berhasil diupload");
+      uploadRef.current = { file, id: item.id };
+
+      upload.mutate(
+        { file },
+        {
+          onSuccess: (res) => {
+            setUploadedUrl(res.url);
+            setUploadItems((prev) =>
+              prev.map((i) =>
+                i.id === item.id
+                  ? { ...i, progress: 100, status: "success" as const }
+                  : i,
+              ),
+            );
+            toast.success("Bukti bayar berhasil diupload");
+          },
+          onError: (err: unknown) => {
+            const msg =
+              typeof (err as Record<string, unknown>)?.message === "string"
+                ? ((err as Record<string, unknown>).message as string)
+                : "Gagal upload bukti bayar";
+            setUploadItems((prev) =>
+              prev.map((i) =>
+                i.id === item.id
+                  ? { ...i, status: "error" as const, error: msg }
+                  : i,
+              ),
+            );
+            toast.error(msg);
+          },
         },
-        onError: (err: unknown) => {
-          const msg =
-            typeof (err as Record<string, unknown>)?.message === "string"
-              ? ((err as Record<string, unknown>).message as string)
-              : "Gagal upload bukti bayar";
-          setUploadError(msg);
-          toast.error(msg);
+      );
+    },
+    [upload, toast],
+  );
+
+  const handleRetry = useCallback(
+    (item: FileUploadItem) => {
+      if (!uploadRef.current || uploadRef.current.id !== item.id) return;
+
+      setUploadItems((prev) =>
+        prev.map((i) =>
+          i.id === item.id
+            ? { ...i, status: "uploading" as const, progress: 0, error: undefined }
+            : i,
+        ),
+      );
+
+      upload.mutate(
+        { file: uploadRef.current.file },
+        {
+          onSuccess: (res) => {
+            setUploadedUrl(res.url);
+            setUploadItems((prev) =>
+              prev.map((i) =>
+                i.id === item.id
+                  ? { ...i, progress: 100, status: "success" as const }
+                  : i,
+              ),
+            );
+            toast.success("Bukti bayar berhasil diupload");
+          },
+          onError: (err: unknown) => {
+            const msg =
+              typeof (err as Record<string, unknown>)?.message === "string"
+                ? ((err as Record<string, unknown>).message as string)
+                : "Gagal upload bukti bayar";
+            setUploadItems((prev) =>
+              prev.map((i) =>
+                i.id === item.id
+                  ? { ...i, status: "error" as const, error: msg }
+                  : i,
+              ),
+            );
+          },
         },
-      },
-    );
-  };
+      );
+    },
+    [upload, toast],
+  );
+
+  const handleRemove = useCallback(
+    (item: FileUploadItem) => {
+      if (uploadRef.current?.id === item.id) {
+        uploadRef.current = null;
+        setUploadedUrl(null);
+      }
+    },
+    [],
+  );
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -241,7 +315,7 @@ export function CheckoutForm() {
     return (
       <div className="mx-auto max-w-2xl px-4 py-8">
         <Skeleton className="h-8 w-48" />
-        <div className="mt-6 space-y-4">
+        <div className="mt-6 flex flex-col gap-4">
           <Skeleton className="h-24 w-full rounded-xl" />
           <Skeleton className="h-12 w-full" />
           <Skeleton className="h-12 w-full" />
@@ -277,13 +351,13 @@ export function CheckoutForm() {
 
         <h1 className="font-heading text-xl font-semibold">Checkout</h1>
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-6">
+        <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-6">
           {/* Product Summary */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Ringkasan Pesanan</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="flex flex-col gap-3">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="font-medium">{product.name}</p>
@@ -309,14 +383,14 @@ export function CheckoutForm() {
             <CardHeader>
               <CardTitle className="text-base">Informasi Pembeli</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="flex flex-col gap-4">
               {user && (
-                <div className="space-y-1">
+                <div className="flex flex-col gap-1">
                   <p className="text-sm text-muted-foreground">Email</p>
                   <p className="font-medium">{user.email}</p>
                 </div>
               )}
-              <div className="space-y-1.5">
+              <div className="flex flex-col gap-1.5">
                 <Label htmlFor="whatsapp">Nomor WhatsApp *</Label>
                 <Input
                   id="whatsapp"
@@ -342,64 +416,24 @@ export function CheckoutForm() {
             <CardHeader>
               <CardTitle className="text-base">Upload Bukti Pembayaran</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="rounded-lg border border-dashed border-border p-4">
-                <p className="mb-2 text-xs font-medium text-muted-foreground">
-                  Upload bukti transfer (opsional, JPEG/PNG/WebP/HEIC max 10 MB)
-                </p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
-                  className="hidden"
-                  onChange={handleFileUpload}
-                />
-                {uploadedUrl ? (
-                  <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2 dark:border-emerald-800 dark:bg-emerald-950/30">
-                    <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
-                    <span className="flex-1 truncate text-xs text-emerald-700 dark:text-emerald-300">
-                      Bukti bayar terupload
-                    </span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="size-6"
-                      onClick={() => {
-                        setUploadedUrl(null);
-                        if (fileInputRef.current) fileInputRef.current.value = "";
-                      }}
-                    >
-                      <X className="size-3" />
-                    </Button>
-                  </div>
-                ) : (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={upload.isPending}
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    {upload.isPending ? (
-                      <>
-                        <RefreshCw className="mr-1.5 size-3 animate-spin" />
-                        Mengupload...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="mr-1.5 size-3" />
-                        Pilih File
-                      </>
-                    )}
-                  </Button>
-                )}
-                {uploadError && (
-                  <p className="mt-1 text-xs text-destructive">{uploadError}</p>
-                )}
-              </div>
+            <CardContent className="flex flex-col gap-4">
+              <FileUpload
+                value={uploadItems}
+                onValueChange={setUploadItems}
+                onFilesAdded={handleFilesAdded}
+                onRetry={handleRetry}
+                onRemove={handleRemove}
+                variant="centered"
+                maxFiles={1}
+                multiple={false}
+                accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                title="Drop bukti bayar di sini"
+                description="JPEG, PNG, WebP, atau HEIC (max 10 MB)"
+                browseLabel="Pilih File"
+                disabled={checkout.isPending}
+              />
 
-              <div className="space-y-1.5">
+              <div className="flex flex-col gap-1.5">
                 <Label htmlFor="note">Catatan Pembayaran</Label>
                 <Textarea
                   id="note"
@@ -429,12 +463,12 @@ export function CheckoutForm() {
           >
             {checkout.isPending ? (
               <>
-                <RefreshCw className="mr-2 size-4 animate-spin" />
+                <Spinner data-icon="inline-start" />
                 Memproses...
               </>
             ) : (
               <>
-                <ShoppingBagIcon className="mr-2 size-4" />
+                <ShoppingBagIcon data-icon="inline-start" />
                 Buat Pesanan
               </>
             )}
