@@ -127,7 +127,7 @@ export default function ApiKeysPage() {
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
-      toast.success("API Key disalin!");
+      toast.success("Prefix API Key disalin!");
       setTimeout(() => setCopied(false), 2000);
     });
   };
@@ -239,7 +239,7 @@ export default function ApiKeysPage() {
         </div>
       </div>
 
-      {/* Info card */}
+      {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "keys" | "orders")}>
         <TabsList variant="line">
           <TabsTrigger value="keys">
@@ -253,63 +253,63 @@ export default function ApiKeysPage() {
         </TabsList>
 
         <TabsContent value="keys" className="mt-4 space-y-4">
-      <Card className="border-primary/10 bg-primary/5">
-        <CardContent className="flex items-start gap-3 p-4">
-          <IconKey className="mt-0.5 size-5 shrink-0 text-primary" />
-          <div className="space-y-1 text-sm">
-            <p className="font-medium">Akses Data Market Real-time</p>
-            <p className="text-muted-foreground">
-              Gunakan API key untuk mengakses endpoint market data: harga real-time, candle history,
-              dan indikator teknikal. Setiap request memerlukan header <code className="rounded bg-muted px-1 font-mono text-xs">Authorization: Bearer &lt;key&gt;</code>
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+          <Card className="border-primary/10 bg-primary/5">
+            <CardContent className="flex items-start gap-3 p-4">
+              <IconKey className="mt-0.5 size-5 shrink-0 text-primary" />
+              <div className="space-y-1 text-sm">
+                <p className="font-medium">Akses Data Market Real-time</p>
+                <p className="text-muted-foreground">
+                  Gunakan API key untuk mengakses endpoint market data: harga real-time, candle history,
+                  dan indikator teknikal. Setiap request memerlukan header <code className="rounded bg-muted px-1 font-mono text-xs">Authorization: Bearer &lt;key&gt;</code>
+                </p>
+              </div>
+            </CardContent>
+          </Card>
 
-      {/* Key list */}
-      {isLoading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 2 }).map((_, i) => (
-            <Skeleton key={i} className="h-28 w-full rounded-xl" />
-          ))}
-        </div>
-      ) : !keys || keys.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <IconKeyOff className="mb-4 size-12 text-muted-foreground/50" />
-            <p className="text-lg font-medium text-muted-foreground">
-              Belum ada API Key
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground/70">
-              Buat key pertama untuk mulai menggunakan market data API
-            </p>
-            <Button
-              className="mt-6"
-              size="sm"
-              onClick={() => setCreateOpen(true)}
-            >
-              <IconPlus className="mr-1.5 size-3.5" />
-              Buat API Key
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-3">
-          {keys.map((key) => (
-            <ApiKeyCard
-              key={key.id}
-              apiKey={key}
-              visible={visibleKeyId === key.id}
-              onToggleVisibility={() =>
-                setVisibleKeyId(visibleKeyId === key.id ? null : key.id)
-              }
-              onRevoke={() => handleRevoke(key.id)}
-              onCopy={() => handleCopy(key.keyPrefix)}
-              isRevoking={revokeKey.isPending}
-            />
-          ))}
-        </div>
-      )}
+          {/* Key list */}
+          {isLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <Skeleton key={i} className="h-28 w-full rounded-xl" />
+              ))}
+            </div>
+          ) : !keys || keys.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                <IconKeyOff className="mb-4 size-12 text-muted-foreground/50" />
+                <p className="text-lg font-medium text-muted-foreground">
+                  Belum ada API Key
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground/70">
+                  Buat key pertama untuk mulai menggunakan market data API
+                </p>
+                <Button
+                  className="mt-6"
+                  size="sm"
+                  onClick={() => setCreateOpen(true)}
+                >
+                  <IconPlus className="mr-1.5 size-3.5" />
+                  Buat API Key
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {keys.map((key) => (
+                <ApiKeyCard
+                  key={key.id}
+                  apiKey={key}
+                  visible={visibleKeyId === key.id}
+                  onToggleVisibility={() =>
+                    setVisibleKeyId(visibleKeyId === key.id ? null : key.id)
+                  }
+                  onRevoke={() => handleRevoke(key.id)}
+                  onCopy={() => handleCopy(key.keyPrefix)}
+                  isRevoking={revokeKey.isPending}
+                />
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="orders" className="mt-4">
@@ -358,7 +358,7 @@ function ApiKeyCard({
             {/* Key preview */}
             <div className="flex items-center gap-2">
               <code className="rounded bg-muted px-2 py-1 font-mono text-xs">
-                {visible ? apiKey.keyPrefix : maskKey(apiKey.keyPrefix)}
+                {visible ? `${apiKey.keyPrefix}${"•".repeat(20)}` : maskKey(apiKey.keyPrefix)}
               </code>
               <Button
                 size="icon"
@@ -378,11 +378,15 @@ function ApiKeyCard({
                   variant="ghost"
                   className="size-6"
                   onClick={onCopy}
+                  title="Copy prefix (full key hanya ditampilkan saat pertama dibuat)"
                 >
                   <IconCopy className="size-3.5 text-muted-foreground" />
                 </Button>
               )}
             </div>
+            <p className="text-[10px] text-muted-foreground/60">
+              Full key hanya ditampilkan sekali saat pertama dibuat
+            </p>
 
             {/* Meta info */}
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
