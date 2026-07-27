@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   IconKey,
   IconCopy,
@@ -12,6 +13,11 @@ import {
   IconKeyOff,
   IconEye,
   IconEyeOff,
+  IconReceipt,
+  IconUpload,
+  IconClock,
+  IconCircleCheck,
+  IconCircleX,
 } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,12 +50,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/lib/toast";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   useApiKeys,
   useCreateApiKey,
   useRevokeApiKey,
 } from "@/features/api-keys/hooks";
+import { queryKeys } from "@/lib/query-keys";
 import type { ApiKey } from "@/features/api-keys/types";
 
 function formatDate(dateStr: string | null): string {
@@ -84,6 +93,15 @@ export default function ApiKeysPage() {
   const [createdKey, setCreatedKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [visibleKeyId, setVisibleKeyId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"keys" | "orders">("keys");
+
+  // Support ?tab=orders from redirect
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get("tab") === "orders") {
+      setActiveTab("orders");
+    }
+  }, [searchParams]);
 
   const handleCreate = async () => {
     if (!newKeyName.trim()) return;
@@ -127,7 +145,7 @@ export default function ApiKeysPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">API Keys</h1>
           <p className="text-sm text-muted-foreground">
-            Kelola API key untuk mengakses data market real-time
+            Kelola API key dan langganan API
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -222,6 +240,19 @@ export default function ApiKeysPage() {
       </div>
 
       {/* Info card */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "keys" | "orders")}>
+        <TabsList variant="line">
+          <TabsTrigger value="keys">
+            <IconKey className="mr-1.5 size-3.5" />
+            API Keys
+          </TabsTrigger>
+          <TabsTrigger value="orders">
+            <IconReceipt className="mr-1.5 size-3.5" />
+            Subscription Orders
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="keys" className="mt-4 space-y-4">
       <Card className="border-primary/10 bg-primary/5">
         <CardContent className="flex items-start gap-3 p-4">
           <IconKey className="mt-0.5 size-5 shrink-0 text-primary" />
@@ -279,6 +310,12 @@ export default function ApiKeysPage() {
           ))}
         </div>
       )}
+        </TabsContent>
+
+        <TabsContent value="orders" className="mt-4">
+          <SubscriptionOrdersSection />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
@@ -384,5 +421,176 @@ function ApiKeyCard({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+
+// ─── Subscription Orders Section ─────────────────────────────
+
+interface SubscriptionOrder {
+  id: string;
+  serviceId: string;
+  planId: string;
+  status: "PENDING_PAYMENT" | "CONFIRMED" | "CANCELLED";
+  totalCents: number;
+  paymentProofUrl: string | null;
+  paymentNote: string | null;
+  cancellationNote: string | null;
+  confirmedAt: string | null;
+  cancelledAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const ORDER_STATUS_CONFIG = {
+  PENDING_PAYMENT: { label: "Menunggu Pembayaran", icon: IconClock, color: "text-amber-600", bg: "bg-amber-500/10" },
+  CONFIRMED: { label: "Dikonfirmasi", icon: IconCircleCheck, color: "text-emerald-600", bg: "bg-emerald-500/10" },
+  CANCELLED: { label: "Dibatalkan", icon: IconCircleX, color: "text-red-600", bg: "bg-red-500/10" },
+};
+
+function SubscriptionOrdersSection() {
+  const toast = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: orders, isLoading } = useQuery<SubscriptionOrder[]>({
+    queryKey: queryKeys.apiDirectory.subscriptionOrders(),
+    queryFn: async () => {
+      const res = await fetch("/api/v1/bff/api-services/subscription-orders/mine");
+      if (!res.ok) return [];
+      return res.json();
+    },
+    staleTime: 30_000,
+  });
+
+  const uploadProofMutation = useMutation({
+    mutationFn: async ({ orderId, file }: { orderId: string; file: File }) => {
+      // 1. Upload file to storage
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("purpose", "payment-proof");
+
+      const uploadRes = await fetch("/api/v1/bff/storage/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (!uploadRes.ok) throw new Error("Gagal upload bukti pembayaran");
+      const { url } = await uploadRes.json();
+
+      // 2. Attach proof URL to order
+      const patchRes = await fetch(`/api/v1/bff/api-services/subscription-orders/${orderId}/payment-proof`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentProofUrl: url }),
+      });
+      if (!patchRes.ok) throw new Error("Gagal menyimpan bukti pembayaran");
+      return patchRes.json();
+    },
+    onSuccess: () => {
+      toast.success("Bukti pembayaran berhasil diupload!");
+      queryClient.invalidateQueries({ queryKey: queryKeys.apiDirectory.subscriptionOrders() });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+
+  const handleUploadProof = (orderId: string) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/jpeg,image/png,image/webp";
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (file) {
+        uploadProofMutation.mutate({ orderId, file });
+      }
+    };
+    input.click();
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <Skeleton key={i} className="h-24 w-full rounded-xl" />
+        ))}
+      </div>
+    );
+  }
+
+  if (!orders || orders.length === 0) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+          <IconReceipt className="mb-4 size-12 text-muted-foreground/50" />
+          <p className="text-lg font-medium text-muted-foreground">
+            Belum ada subscription order
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground/70">
+            Subscribe ke plan berbayar di API Directory untuk melihat order di sini
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {orders.map((order) => {
+        const statusConf = ORDER_STATUS_CONFIG[order.status];
+        const StatusIcon = statusConf.icon;
+
+        return (
+          <Card key={order.id} className="transition-colors hover:border-border/80">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className={`flex size-7 items-center justify-center rounded-md ${statusConf.bg}`}>
+                      <StatusIcon className={`size-4 ${statusConf.color}`} />
+                    </div>
+                    <span className="font-medium text-sm">{statusConf.label}</span>
+                    <Badge variant="outline" className="font-mono text-[10px]">
+                      #{order.id.slice(0, 8)}
+                    </Badge>
+                  </div>
+
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    <span>Total: Rp {order.totalCents.toLocaleString("id-ID")}</span>
+                    <span>Dibuat: {formatDate(order.createdAt)}</span>
+                    {order.confirmedAt && <span>Dikonfirmasi: {formatDate(order.confirmedAt)}</span>}
+                  </div>
+
+                  {order.paymentProofUrl && (
+                    <div className="flex items-center gap-2 text-xs text-emerald-600">
+                      <IconCheck className="size-3.5" />
+                      <span>Bukti pembayaran sudah diupload</span>
+                    </div>
+                  )}
+
+                  {order.cancellationNote && (
+                    <p className="text-xs text-red-600 bg-red-500/5 rounded px-2 py-1">
+                      Alasan: {order.cancellationNote}
+                    </p>
+                  )}
+                </div>
+
+                {/* Upload proof button */}
+                {order.status === "PENDING_PAYMENT" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleUploadProof(order.id)}
+                    disabled={uploadProofMutation.isPending}
+                  >
+                    <IconUpload className="mr-1.5 size-3.5" />
+                    {order.paymentProofUrl ? "Ganti Bukti" : "Upload Bukti"}
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
   );
 }

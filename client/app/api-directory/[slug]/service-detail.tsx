@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,7 +21,11 @@ import {
   IconCheck,
   IconCopy,
   IconArrowLeft,
+  IconKey,
+  IconLoader,
 } from "@tabler/icons-react";
+import { useToast } from "@/lib/toast";
+import { useAuthStore } from "@/stores/auth-store";
 import type { ApiServiceDetail, ApiEndpoint, ApiPlan } from "@/features/api-directory/types";
 
 const methodColors: Record<string, string> = {
@@ -102,7 +108,7 @@ export function ApiServiceDetailPage({ slug }: { slug: string }) {
             <EndpointsTab endpoints={service.endpoints} />
           </TabsContent>
           <TabsContent value="pricing">
-            <PricingTab plans={service.plans} />
+            <PricingTab plans={service.plans} slug={slug} />
           </TabsContent>
           <TabsContent value="docs">
             <DocsTab service={service} />
@@ -214,56 +220,150 @@ function EndpointsTab({ endpoints }: { endpoints: ApiEndpoint[] }) {
   );
 }
 
-function PricingTab({ plans }: { plans: ApiPlan[] }) {
+function PricingTab({ plans, slug }: { plans: ApiPlan[]; slug: string }) {
+  const router = useRouter();
+  const toast = useToast();
+  const user = useAuthStore((s) => s.user);
+  const [subscribingPlan, setSubscribingPlan] = useState<string | null>(null);
+  const [apiKeyRevealed, setApiKeyRevealed] = useState<string | null>(null);
+
+  const subscribeMutation = useMutation({
+    mutationFn: async (planName: string) => {
+      const res = await fetch(`/api/v1/bff/api-services/${slug}/subscribe`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planName }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message ?? "Gagal subscribe");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      if (data.type === "PENDING_PAYMENT") {
+        // Paid plan — redirect to subscription order page
+        toast.success("Order berhasil dibuat. Silakan transfer dan upload bukti pembayaran.");
+        router.push(`/api-keys?tab=orders`);
+      } else if (data.apiKey?.key) {
+        // Free plan — show API key
+        setApiKeyRevealed(data.apiKey.key);
+        toast.success("Berhasil subscribe! API key kamu sudah dibuat.");
+      } else {
+        toast.success("Berhasil subscribe! Menggunakan API key yang sudah ada.");
+      }
+      setSubscribingPlan(null);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+      setSubscribingPlan(null);
+    },
+  });
+
+  const handleSubscribe = (plan: ApiPlan) => {
+    if (!user) {
+      router.push(`/auth/login?redirect=/api-directory/${slug}`);
+      return;
+    }
+    setSubscribingPlan(plan.name);
+    subscribeMutation.mutate(plan.name);
+  };
+
   return (
-    <div className="grid gap-4 pt-6 md:grid-cols-3">
-      {plans.map((plan, idx) => (
-        <Card key={plan.id} className={idx === 1 ? "border-primary" : ""}>
-          <CardHeader>
-            <CardTitle className="text-lg">{plan.name}</CardTitle>
-            <div className="mt-2">
-              {plan.priceCents === 0 ? (
-                <span className="text-3xl font-bold">Gratis</span>
-              ) : (
-                <div>
-                  <span className="text-3xl font-bold">
-                    Rp {plan.priceCents.toLocaleString("id-ID")}
-                  </span>
-                  <span className="text-muted-foreground text-sm">/bulan</span>
-                </div>
-              )}
+    <div className="flex flex-col gap-6 pt-6">
+      {/* API Key reveal dialog */}
+      {apiKeyRevealed && (
+        <Card className="border-emerald-500 bg-emerald-500/5">
+          <CardPanel>
+            <div className="flex items-center gap-2 mb-2">
+              <IconKey className="size-5 text-emerald-600" />
+              <p className="font-medium text-emerald-700 dark:text-emerald-400">API Key Baru — Simpan Sekarang!</p>
             </div>
-          </CardHeader>
-          <CardPanel className="pt-0">
-            <ul className="flex flex-col gap-2.5">
-              <li className="flex items-center gap-2 text-sm">
-                <IconCheck data-icon="inline-start" className="text-emerald-500" />
-                {plan.requestsPerMinute} requests/menit
-              </li>
-              <li className="flex items-center gap-2 text-sm">
-                <IconCheck data-icon="inline-start" className="text-emerald-500" />
-                {plan.requestsPerDay
-                  ? `${plan.requestsPerDay.toLocaleString("id-ID")} requests/hari`
-                  : "Unlimited requests/hari"}
-              </li>
-              {plan.features &&
-                (plan.features as string[]).map((feature, i) => (
-                  <li key={i} className="flex items-center gap-2 text-sm">
-                    <IconCheck data-icon="inline-start" className="text-emerald-500" />
-                    {feature}
-                  </li>
-                ))}
-            </ul>
-            <Separator className="my-4" />
-            <Button
-              className="w-full"
-              variant={idx === 0 ? "outline" : "default"}
-            >
-              {plan.priceCents === 0 ? "Mulai Gratis" : "Berlangganan"}
-            </Button>
+            <p className="text-xs text-muted-foreground mb-3">
+              Key ini hanya ditampilkan sekali. Salin dan simpan di tempat aman.
+            </p>
+            <div className="flex items-center gap-2 rounded-lg border bg-background px-3 py-2 font-mono text-sm">
+              <span className="flex-1 truncate select-all">{apiKeyRevealed}</span>
+              <button
+                className="text-muted-foreground hover:text-foreground shrink-0"
+                onClick={() => {
+                  navigator.clipboard.writeText(apiKeyRevealed);
+                  toast.success("API key sudah di-copy!");
+                }}
+                aria-label="Copy API key"
+              >
+                <IconCopy className="size-4" />
+              </button>
+            </div>
           </CardPanel>
         </Card>
-      ))}
+      )}
+
+      <div className="grid gap-4 md:grid-cols-3">
+        {plans.map((plan, idx) => (
+          <Card key={plan.id} className={idx === 1 ? "border-primary" : ""}>
+            <CardHeader>
+              <CardTitle className="text-lg">{plan.name}</CardTitle>
+              <div className="mt-2">
+                {plan.priceCents === 0 ? (
+                  <span className="text-3xl font-bold">Gratis</span>
+                ) : (
+                  <div>
+                    <span className="text-3xl font-bold">
+                      Rp {plan.priceCents.toLocaleString("id-ID")}
+                    </span>
+                    <span className="text-muted-foreground text-sm">/bulan</span>
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardPanel className="pt-0">
+              <ul className="flex flex-col gap-2.5">
+                <li className="flex items-center gap-2 text-sm">
+                  <IconCheck data-icon="inline-start" className="text-emerald-500" />
+                  {plan.requestsPerMinute} requests/menit
+                </li>
+                <li className="flex items-center gap-2 text-sm">
+                  <IconCheck data-icon="inline-start" className="text-emerald-500" />
+                  {plan.requestsPerDay
+                    ? `${plan.requestsPerDay.toLocaleString("id-ID")} requests/hari`
+                    : "Unlimited requests/hari"}
+                </li>
+                {plan.features &&
+                  (plan.features as string[]).map((feature, i) => (
+                    <li key={i} className="flex items-center gap-2 text-sm">
+                      <IconCheck data-icon="inline-start" className="text-emerald-500" />
+                      {feature}
+                    </li>
+                  ))}
+              </ul>
+              <Separator className="my-4" />
+              <Button
+                className="w-full"
+                variant={idx === 0 ? "outline" : "default"}
+                disabled={subscribingPlan === plan.name}
+                onClick={() => handleSubscribe(plan)}
+              >
+                {subscribingPlan === plan.name ? (
+                  <>
+                    <IconLoader className="animate-spin" data-icon="inline-start" />
+                    Memproses...
+                  </>
+                ) : plan.priceCents === 0 ? (
+                  "Mulai Gratis"
+                ) : (
+                  "Berlangganan"
+                )}
+              </Button>
+              {plan.priceCents > 0 && (
+                <p className="mt-2 text-center text-[11px] text-muted-foreground">
+                  Pembayaran manual — transfer lalu upload bukti
+                </p>
+              )}
+            </CardPanel>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }
