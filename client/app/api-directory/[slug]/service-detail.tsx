@@ -269,22 +269,82 @@ function PricingTab({ plans }: { plans: ApiPlan[] }) {
 }
 
 function DocsTab({ service }: { service: ApiServiceDetail }) {
-  const curlExample = `curl -X GET "${service.baseUrl}/prices/EURUSD" \\
+  // Build example paths from actual endpoints if available
+  const priceEndpoint = service.endpoints.find(
+    (ep) => ep.method === "GET" && ep.path.includes("/price/"),
+  );
+  const examplePath = priceEndpoint?.path ?? "/price/FOREXCOM:XAUUSD";
+  const exampleSymbol = "FOREXCOM:XAUUSD";
+
+  const curlExample = `# Harga real-time
+curl -X GET "${service.baseUrl}${examplePath.replace(":symbol", exampleSymbol)}" \\
+  -H "X-API-Key: nl_your_api_key_here"
+
+# Candle OHLC (interval: 1m, 5m, 15m, 30m, 1h, 4h, 1d)
+curl -X GET "${service.baseUrl}/candles/${exampleSymbol}?interval=5m&limit=50" \\
+  -H "X-API-Key: nl_your_api_key_here"
+
+# Indikator teknikal
+curl -X GET "${service.baseUrl}/indicators/${exampleSymbol}?timeframe=15" \\
+  -H "X-API-Key: nl_your_api_key_here"
+
+# SSE realtime stream
+curl -N "${service.baseUrl}${examplePath.replace(":symbol", exampleSymbol)}/stream" \\
   -H "X-API-Key: nl_your_api_key_here"`;
 
-  const jsExample = `const response = await fetch("${service.baseUrl}/prices/EURUSD", {
+  const jsExample = `// Harga real-time
+const response = await fetch("${service.baseUrl}/price/${exampleSymbol}", {
   headers: { "X-API-Key": "nl_your_api_key_here" }
 });
 const data = await response.json();
-console.log(data);`;
+console.log(data.price, data.change, data.changePercent);
+
+// SSE stream (server-side, jaga API key tetap rahasia)
+const stream = await fetch("${service.baseUrl}/price/${exampleSymbol}/stream", {
+  headers: { "X-API-Key": "nl_your_api_key_here" }
+});
+const reader = stream.body.getReader();
+const decoder = new TextDecoder();
+while (true) {
+  const { done, value } = await reader.read();
+  if (done) break;
+  const lines = decoder.decode(value).split("\\n")
+    .filter(l => l.startsWith("data: "));
+  for (const line of lines) {
+    const tick = JSON.parse(line.slice(6));
+    console.log("Price:", tick.price);
+  }
+}`;
 
   const pythonExample = `import requests
 
-response = requests.get(
-    "${service.baseUrl}/prices/EURUSD",
-    headers={"X-API-Key": "nl_your_api_key_here"}
+API_KEY = "nl_your_api_key_here"
+BASE = "${service.baseUrl}"
+headers = {"X-API-Key": API_KEY}
+
+# Harga real-time
+resp = requests.get(f"{BASE}/price/${exampleSymbol}", headers=headers)
+data = resp.json()
+print(f"Harga: {data['price']} | Change: {data['change']} ({data['changePercent']}%)")
+
+# Candle history
+resp = requests.get(
+    f"{BASE}/candles/${exampleSymbol}",
+    headers=headers,
+    params={"interval": "5m", "limit": 50}
 )
-print(response.json())`;
+candles = resp.json()["candles"]
+for c in candles[-3:]:
+    print(f"  O:{c['open']} H:{c['high']} L:{c['low']} C:{c['close']}")
+
+# Indikator teknikal
+resp = requests.get(
+    f"{BASE}/indicators/${exampleSymbol}",
+    headers=headers,
+    params={"timeframe": 15}
+)
+indicators = resp.json()["indicators"]
+print(f"RSI: {indicators['rsi']} | EMA20: {indicators['ema20']}")`;
 
   return (
     <div className="flex flex-col gap-6 pt-6">
@@ -292,9 +352,51 @@ print(response.json())`;
         <h3 className="font-medium mb-3">Autentikasi</h3>
         <p className="text-sm text-muted-foreground">
           Semua request ke API ini memerlukan API key di header{" "}
-          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">X-API-Key</code>.
-          Dapatkan API key gratis dengan klik &quot;Mulai Gratis&quot; di tab Pricing.
+          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">X-API-Key</code>{" "}
+          atau{" "}
+          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">Authorization: Bearer &lt;key&gt;</code>.
+          Dapatkan API key gratis dengan klik &quot;Mulai Gratis&quot; di tab Harga.
         </p>
+      </div>
+
+      <Separator />
+
+      <div>
+        <h3 className="font-medium mb-3">Symbol yang Didukung</h3>
+        <div className="grid gap-2 sm:grid-cols-3 text-sm">
+          <div>
+            <p className="font-medium text-xs text-muted-foreground mb-1">Forex</p>
+            <ul className="space-y-0.5 font-mono text-xs">
+              <li>FOREXCOM:XAUUSD</li>
+              <li>FOREXCOM:XAGUSD</li>
+              <li>FOREXCOM:EURUSD</li>
+              <li>FOREXCOM:GBPUSD</li>
+              <li>FOREXCOM:USDJPY</li>
+              <li>FOREXCOM:USDCAD</li>
+              <li>FOREXCOM:USDCHF</li>
+              <li>FOREXCOM:AUDUSD</li>
+              <li>FOREXCOM:NZDUSD</li>
+            </ul>
+          </div>
+          <div>
+            <p className="font-medium text-xs text-muted-foreground mb-1">Saham</p>
+            <ul className="space-y-0.5 font-mono text-xs">
+              <li>NASDAQ:AAPL</li>
+              <li>NASDAQ:GOOGL</li>
+              <li>NASDAQ:MSFT</li>
+              <li>NASDAQ:TSLA</li>
+              <li>NASDAQ:AMZN</li>
+              <li>NASDAQ:META</li>
+            </ul>
+          </div>
+          <div>
+            <p className="font-medium text-xs text-muted-foreground mb-1">Crypto</p>
+            <ul className="space-y-0.5 font-mono text-xs">
+              <li>CRYPTOCAP:BTC</li>
+              <li>CRYPTOCAP:ETH</li>
+            </ul>
+          </div>
+        </div>
       </div>
 
       <Separator />
@@ -307,7 +409,7 @@ print(response.json())`;
             <pre className="overflow-auto rounded-lg bg-muted p-4 text-xs font-mono">{curlExample}</pre>
           </div>
           <div>
-            <p className="text-xs font-medium text-muted-foreground mb-1.5">JavaScript</p>
+            <p className="text-xs font-medium text-muted-foreground mb-1.5">JavaScript / TypeScript</p>
             <pre className="overflow-auto rounded-lg bg-muted p-4 text-xs font-mono">{jsExample}</pre>
           </div>
           <div>
@@ -330,9 +432,12 @@ print(response.json())`;
               </tr>
             </thead>
             <tbody>
+              <tr className="border-b"><td className="px-4 py-2 font-mono">200</td><td className="px-4 py-2">Sukses</td></tr>
               <tr className="border-b"><td className="px-4 py-2 font-mono">401</td><td className="px-4 py-2">API key tidak ada atau tidak valid</td></tr>
-              <tr className="border-b"><td className="px-4 py-2 font-mono">403</td><td className="px-4 py-2">Tidak punya akses (perlu upgrade paket)</td></tr>
-              <tr className="border-b"><td className="px-4 py-2 font-mono">429</td><td className="px-4 py-2">Batas request terlampaui</td></tr>
+              <tr className="border-b"><td className="px-4 py-2 font-mono">403</td><td className="px-4 py-2">Tidak punya akses ke symbol ini (perlu upgrade paket)</td></tr>
+              <tr className="border-b"><td className="px-4 py-2 font-mono">404</td><td className="px-4 py-2">Symbol tidak didukung atau data belum tersedia</td></tr>
+              <tr className="border-b"><td className="px-4 py-2 font-mono">429</td><td className="px-4 py-2">Batas request terlampaui (per-menit atau per-hari)</td></tr>
+              <tr className="border-b"><td className="px-4 py-2 font-mono">503</td><td className="px-4 py-2">API dinonaktifkan atau dalam pemeliharaan</td></tr>
               <tr><td className="px-4 py-2 font-mono">500</td><td className="px-4 py-2">Kesalahan server internal</td></tr>
             </tbody>
           </table>
