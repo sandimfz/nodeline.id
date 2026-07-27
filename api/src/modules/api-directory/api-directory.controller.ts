@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Param,
   Query,
   Body,
@@ -73,5 +74,33 @@ export class ApiDirectoryController {
     @CurrentUser() user: { id: string },
   ) {
     return this.directory.subscribe(user.id, slug, dto.planName);
+  }
+
+  // ─── Subscription Orders (user endpoints) ─────────────────
+
+  /** List own subscription orders */
+  @UseGuards(JwtAuthGuard)
+  @Get('subscription-orders/mine')
+  @HttpCode(HttpStatus.OK)
+  async listOwnOrders(@CurrentUser() user: { id: string }) {
+    return this.directory.listOwnSubscriptionOrders(user.id);
+  }
+
+  /** Upload payment proof for a subscription order */
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @UseGuards(JwtAuthGuard)
+  @Patch('subscription-orders/:orderId/payment-proof')
+  @HttpCode(HttpStatus.OK)
+  async uploadPaymentProof(
+    @Param('orderId') orderId: string,
+    @Body() body: { paymentProofUrl: string; paymentNote?: string },
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.directory.uploadPaymentProof(
+      user.id,
+      orderId,
+      body.paymentProofUrl,
+      body.paymentNote,
+    );
   }
 }

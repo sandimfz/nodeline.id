@@ -71,4 +71,37 @@ export class ApiDirectoryAdminController {
   async createPlan(@Param('id') id: string, @Body() dto: CreatePlanDto) {
     return this.directory.createPlan(id, dto);
   }
+
+  // ─── Subscription Orders Management ─────────────────────────
+
+  /** List all subscription orders (admin view) */
+  @Get('subscription-orders')
+  @HttpCode(HttpStatus.OK)
+  async listSubscriptionOrders() {
+    return this.directory.listAllSubscriptionOrders();
+  }
+
+  /** List pending subscription orders only */
+  @Get('subscription-orders/pending')
+  @HttpCode(HttpStatus.OK)
+  async listPendingOrders() {
+    return this.directory.listPendingSubscriptionOrders();
+  }
+
+  /** Confirm subscription payment — activates subscription + generates API key */
+  @Post('subscription-orders/:orderId/confirm')
+  @HttpCode(HttpStatus.OK)
+  async confirmPayment(@Param('orderId') orderId: string) {
+    return this.directory.confirmSubscriptionPayment(orderId);
+  }
+
+  /** Cancel subscription order */
+  @Post('subscription-orders/:orderId/cancel')
+  @HttpCode(HttpStatus.OK)
+  async cancelOrder(
+    @Param('orderId') orderId: string,
+    @Body() body: { reason?: string },
+  ) {
+    return this.directory.cancelSubscriptionOrder(orderId, body.reason);
+  }
 }

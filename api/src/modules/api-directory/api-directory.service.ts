@@ -4,7 +4,7 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
-import { eq, and, ilike, asc, sql } from 'drizzle-orm';
+import { eq, and, ilike, asc, desc, sql } from 'drizzle-orm';
 import { createHash, randomBytes } from 'node:crypto';
 import { DrizzleService } from '../../database/drizzle/drizzle.service.js';
 import {
@@ -13,6 +13,7 @@ import {
   apiPlans,
   apiSubscriptions,
   apiKeys,
+  subscriptionOrders,
 } from '../../database/drizzle/schema/index.js';
 import type {
   CreateServiceDto,
@@ -127,7 +128,12 @@ export class ApiDirectoryService {
     const plan = plans[0];
     if (!plan) throw new NotFoundException('Plan tidak ditemukan');
 
-    // 3. Get or create API key for user
+    // 3. If plan is paid, create a subscription order instead of activating immediately
+    if (plan.priceCents > 0) {
+      return this.createSubscriptionOrder(userId, service, plan);
+    }
+
+    // 4. Free plan: get or create API key for user
     let [userKey] = await this.drizzle.db
       .select()
       .from(apiKeys)
@@ -155,7 +161,7 @@ export class ApiDirectoryService {
       rawKey = keyRaw; // One-time reveal
     }
 
-    // 4. Check existing subscription
+    // 5. Check existing subscription
     const [existingSub] = await this.drizzle.db
       .select()
       .from(apiSubscriptions)
@@ -172,7 +178,7 @@ export class ApiDirectoryService {
       throw new ConflictException('Sudah berlangganan API ini');
     }
 
-    // 5. Create subscription
+    // 6. Create subscription
     const tomorrow = new Date();
     tomorrow.setUTCHours(0, 0, 0, 0);
     tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
@@ -195,6 +201,316 @@ export class ApiDirectoryService {
         ? { key: rawKey, prefix: userKey.keyPrefix, note: 'Simpan key ini — tidak bisa ditampilkan lagi' }
         : { prefix: userKey.keyPrefix, note: 'Menggunakan API key yang sudah ada' },
     };
+  }
+
+  // ─── Subscription Orders (Paid Plans) ─────────────────────
+
+  /**
+   * Create subscription order for paid plans.
+   * User must pay and upload proof before admin confirms.
+   */
+  private async createSubscriptionOrder(
+    userId: string,
+    service: typeof apiServices.$inferSelect,
+    plan: typeof apiPlans.$inferSelect,
+  ) {
+    // Check if user already has a pending order for this service+plan
+    const [existingOrder] = await this.drizzle.db
+      .select()
+      .from(subscriptionOrders)
+      .where(
+        and(
+          eq(subscriptionOrders.userId, userId),
+          eq(subscriptionOrders.serviceId, service.id),
+          eq(subscriptionOrders.planId, plan.id),
+          eq(subscriptionOrders.status, 'PENDING_PAYMENT'),
+        ),
+      )
+      .limit(1);
+
+    if (existingOrder) {
+      // Return existing order — user belum bayar yang sebelumnya
+      return {
+        type: 'PENDING_PAYMENT' as const,
+        order: existingOrder,
+        service: { id: service.id, name: service.name, slug: service.slug },
+        plan: { id: plan.id, name: plan.name, priceCents: plan.priceCents },
+        message: 'Order sudah dibuat sebelumnya. Silakan upload bukti pembayaran.',
+      };
+    }
+
+    // Check if user already has active subscription for this service
+    const [existingKey] = await this.drizzle.db
+      .select()
+      .from(apiKeys)
+      .where(and(eq(apiKeys.userId, userId), eq(apiKeys.isActive, true)))
+      .limit(1);
+
+    if (existingKey) {
+      const [existingSub] = await this.drizzle.db
+        .select()
+        .from(apiSubscriptions)
+        .where(
+          and(
+            eq(apiSubscriptions.apiKeyId, existingKey.id),
+            eq(apiSubscriptions.serviceId, service.id),
+            eq(apiSubscriptions.status, 'ACTIVE'),
+          ),
+        )
+        .limit(1);
+
+      if (existingSub) {
+        throw new ConflictException('Sudah berlangganan API ini');
+      }
+    }
+
+    const [order] = await this.drizzle.db
+      .insert(subscriptionOrders)
+      .values({
+        userId,
+        serviceId: service.id,
+        planId: plan.id,
+        totalCents: plan.priceCents,
+      })
+      .returning();
+
+    return {
+      type: 'PENDING_PAYMENT' as const,
+      order,
+      service: { id: service.id, name: service.name, slug: service.slug },
+      plan: { id: plan.id, name: plan.name, priceCents: plan.priceCents },
+      message: 'Order berhasil dibuat. Silakan transfer dan upload bukti pembayaran.',
+    };
+  }
+
+  /** Upload payment proof URL to a subscription order */
+  async uploadPaymentProof(
+    userId: string,
+    orderId: string,
+    paymentProofUrl: string,
+    paymentNote?: string,
+  ) {
+    const [order] = await this.drizzle.db
+      .select()
+      .from(subscriptionOrders)
+      .where(
+        and(
+          eq(subscriptionOrders.id, orderId),
+          eq(subscriptionOrders.userId, userId),
+        ),
+      )
+      .limit(1);
+
+    if (!order) throw new NotFoundException('Order tidak ditemukan');
+    if (order.status !== 'PENDING_PAYMENT') {
+      throw new BadRequestException(`Order sudah dalam status ${order.status}`);
+    }
+
+    const [updated] = await this.drizzle.db
+      .update(subscriptionOrders)
+      .set({
+        paymentProofUrl,
+        paymentNote: paymentNote ?? order.paymentNote,
+        updatedAt: new Date(),
+      })
+      .where(eq(subscriptionOrders.id, orderId))
+      .returning();
+
+    return updated;
+  }
+
+  /** User: list own subscription orders */
+  async listOwnSubscriptionOrders(userId: string) {
+    return this.drizzle.db
+      .select()
+      .from(subscriptionOrders)
+      .where(eq(subscriptionOrders.userId, userId))
+      .orderBy(desc(subscriptionOrders.createdAt));
+  }
+
+  /** Admin: list all pending subscription orders */
+  async listPendingSubscriptionOrders() {
+    const rows = await this.drizzle.db
+      .select({
+        order: subscriptionOrders,
+        serviceName: apiServices.name,
+        serviceSlug: apiServices.slug,
+        planName: apiPlans.name,
+        planPrice: apiPlans.priceCents,
+      })
+      .from(subscriptionOrders)
+      .innerJoin(apiServices, eq(apiServices.id, subscriptionOrders.serviceId))
+      .innerJoin(apiPlans, eq(apiPlans.id, subscriptionOrders.planId))
+      .where(eq(subscriptionOrders.status, 'PENDING_PAYMENT'))
+      .orderBy(asc(subscriptionOrders.createdAt));
+
+    return rows.map((r) => ({
+      ...r.order,
+      serviceName: r.serviceName,
+      serviceSlug: r.serviceSlug,
+      planName: r.planName,
+      planPrice: r.planPrice,
+    }));
+  }
+
+  /** Admin: list ALL subscription orders */
+  async listAllSubscriptionOrders() {
+    const rows = await this.drizzle.db
+      .select({
+        order: subscriptionOrders,
+        serviceName: apiServices.name,
+        serviceSlug: apiServices.slug,
+        planName: apiPlans.name,
+        planPrice: apiPlans.priceCents,
+      })
+      .from(subscriptionOrders)
+      .innerJoin(apiServices, eq(apiServices.id, subscriptionOrders.serviceId))
+      .innerJoin(apiPlans, eq(apiPlans.id, subscriptionOrders.planId))
+      .orderBy(desc(subscriptionOrders.createdAt));
+
+    return rows.map((r) => ({
+      ...r.order,
+      serviceName: r.serviceName,
+      serviceSlug: r.serviceSlug,
+      planName: r.planName,
+      planPrice: r.planPrice,
+    }));
+  }
+
+  /**
+   * Admin: confirm subscription payment.
+   * Activates the subscription and generates/reuses API key.
+   */
+  async confirmSubscriptionPayment(orderId: string) {
+    const [order] = await this.drizzle.db
+      .select()
+      .from(subscriptionOrders)
+      .where(eq(subscriptionOrders.id, orderId))
+      .limit(1);
+
+    if (!order) throw new NotFoundException('Order tidak ditemukan');
+    if (order.status !== 'PENDING_PAYMENT') {
+      throw new BadRequestException(`Order sudah dalam status ${order.status}`);
+    }
+
+    // Find the plan to get limits
+    const [plan] = await this.drizzle.db
+      .select()
+      .from(apiPlans)
+      .where(eq(apiPlans.id, order.planId))
+      .limit(1);
+
+    if (!plan) throw new NotFoundException('Plan tidak ditemukan');
+
+    // Get or create API key for user
+    let [userKey] = await this.drizzle.db
+      .select()
+      .from(apiKeys)
+      .where(and(eq(apiKeys.userId, order.userId), eq(apiKeys.isActive, true)))
+      .limit(1);
+
+    let rawKey: string | null = null;
+
+    if (!userKey) {
+      const keyRaw = `nl_${randomBytes(24).toString('base64url')}`;
+      const hashedKey = createHash('sha256').update(keyRaw).digest('hex');
+      const keyPrefix = keyRaw.slice(0, 10);
+
+      [userKey] = await this.drizzle.db
+        .insert(apiKeys)
+        .values({
+          userId: order.userId,
+          name: 'Default Key',
+          keyPrefix,
+          hashedKey,
+          plan: plan.name.toUpperCase() === 'PRO' ? 'PRO' : plan.name.toUpperCase() === 'ENTERPRISE' ? 'ENTERPRISE' : 'FREE',
+          rateLimitPerMin: plan.requestsPerMinute,
+        })
+        .returning();
+
+      rawKey = keyRaw;
+    } else {
+      // Upgrade existing key's plan and rate limit
+      [userKey] = await this.drizzle.db
+        .update(apiKeys)
+        .set({
+          plan: plan.name.toUpperCase() === 'PRO' ? 'PRO' : plan.name.toUpperCase() === 'ENTERPRISE' ? 'ENTERPRISE' : 'FREE',
+          rateLimitPerMin: plan.requestsPerMinute,
+        })
+        .where(eq(apiKeys.id, userKey.id))
+        .returning();
+    }
+
+    // Create subscription
+    const tomorrow = new Date();
+    tomorrow.setUTCHours(0, 0, 0, 0);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+
+    // Deactivate any existing subscription for this service
+    await this.drizzle.db
+      .update(apiSubscriptions)
+      .set({ status: 'CANCELLED', cancelledAt: new Date(), updatedAt: new Date() })
+      .where(
+        and(
+          eq(apiSubscriptions.apiKeyId, userKey.id),
+          eq(apiSubscriptions.serviceId, order.serviceId),
+          eq(apiSubscriptions.status, 'ACTIVE'),
+        ),
+      );
+
+    await this.drizzle.db
+      .insert(apiSubscriptions)
+      .values({
+        apiKeyId: userKey.id,
+        serviceId: order.serviceId,
+        planId: order.planId,
+        quotaResetAt: tomorrow,
+      });
+
+    // Mark order as confirmed
+    const [confirmed] = await this.drizzle.db
+      .update(subscriptionOrders)
+      .set({
+        status: 'CONFIRMED',
+        confirmedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(subscriptionOrders.id, orderId))
+      .returning();
+
+    return {
+      order: confirmed,
+      apiKey: rawKey
+        ? { key: rawKey, prefix: userKey.keyPrefix, note: 'Key baru dibuat' }
+        : { prefix: userKey.keyPrefix, note: 'Key existing di-upgrade' },
+    };
+  }
+
+  /** Admin: cancel subscription order */
+  async cancelSubscriptionOrder(orderId: string, reason?: string) {
+    const [order] = await this.drizzle.db
+      .select()
+      .from(subscriptionOrders)
+      .where(eq(subscriptionOrders.id, orderId))
+      .limit(1);
+
+    if (!order) throw new NotFoundException('Order tidak ditemukan');
+    if (order.status !== 'PENDING_PAYMENT') {
+      throw new BadRequestException(`Order sudah dalam status ${order.status}`);
+    }
+
+    const [cancelled] = await this.drizzle.db
+      .update(subscriptionOrders)
+      .set({
+        status: 'CANCELLED',
+        cancellationNote: reason ?? null,
+        cancelledAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(subscriptionOrders.id, orderId))
+      .returning();
+
+    return cancelled;
   }
 
   // ─── Admin CRUD ────────────────────────────────────────────

@@ -29,6 +29,7 @@ export const queryKeys = {
     list: (params?: Record<string, unknown>) =>
       ["api-directory", "list", params ?? {}] as const,
     detail: (slug: string) => ["api-directory", slug] as const,
+    subscriptionOrders: () => ["api-directory", "subscription-orders"] as const,
   },
   chat: {
     all: ["chat"] as const,

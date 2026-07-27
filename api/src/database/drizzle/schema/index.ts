@@ -17,3 +17,4 @@ export * from './api-services.schema.js';
 export * from './api-endpoints.schema.js';
 export * from './api-plans.schema.js';
 export * from './api-subscriptions.schema.js';
+export * from './subscription-orders.schema.js';
