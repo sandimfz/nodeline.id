@@ -24,9 +24,9 @@ export class CandleRepository {
     try {
       await this.drizzle.db.execute(
         sql`
-          INSERT INTO "candles" (symbol, interval, open, high, low, "close", volume, timestamp)
+          INSERT INTO "candles" (symbol, "interval", open, high, low, "close", volume, "timestamp")
           VALUES (${candle.symbol}, ${candle.interval}, ${candle.open.toFixed(2)}, ${candle.high.toFixed(2)}, ${candle.low.toFixed(2)}, ${candle.close.toFixed(2)}, ${Math.round(candle.volume)}, to_timestamp(${candle.timestamp}::double precision / 1000))
-          ON CONFLICT (symbol, interval, timestamp) DO UPDATE SET
+          ON CONFLICT (symbol, "interval", "timestamp") DO UPDATE SET
             high = GREATEST("candles".high, ${candle.high.toFixed(2)}),
             low = LEAST("candles".low, ${candle.low.toFixed(2)}),
             "close" = ${candle.close.toFixed(2)},
@@ -52,11 +52,11 @@ export class CandleRepository {
     try {
       const result = await this.drizzle.db.execute(
         sql`
-          SELECT symbol, interval, open, high, low, "close", volume,
-                 EXTRACT(EPOCH FROM timestamp)::bigint * 1000 as timestamp_ms
+          SELECT symbol, "interval", open, high, low, "close", volume,
+                 EXTRACT(EPOCH FROM "timestamp")::bigint * 1000 as timestamp_ms
           FROM "candles"
-          WHERE symbol = ${symbol} AND interval = ${interval}
-          ORDER BY timestamp DESC
+          WHERE symbol = ${symbol} AND "interval" = ${interval}
+          ORDER BY "timestamp" DESC
           LIMIT ${limit}
         `,
       );
