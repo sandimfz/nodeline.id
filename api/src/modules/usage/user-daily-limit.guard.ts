@@ -39,9 +39,19 @@ export class UserDailyLimitGuard implements CanActivate, OnModuleDestroy {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
     const apiKey = request.apiKey as { userId?: string } | undefined;
+    const subscription = request.subscription as
+      | { requestsPerDay: number | null }
+      | undefined;
 
     if (!apiKey?.userId) {
       return true;
+    }
+
+    // Per-plan daily limit. null = unlimited (e.g. ENTERPRISE plans).
+    const dailyLimit = subscription?.requestsPerDay ?? DAILY_LIMIT;
+
+    if (dailyLimit === null) {
+      return true; // Unlimited
     }
 
     const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
@@ -53,15 +63,15 @@ export class UserDailyLimitGuard implements CanActivate, OnModuleDestroy {
       return true;
     }
 
-    if (entry.count >= DAILY_LIMIT) {
+    if (entry.count >= dailyLimit) {
       this.logger.warn(
-        `Daily limit exceeded: user=${apiKey.userId} (${DAILY_LIMIT}/hari)`,
+        `Daily limit exceeded: user=${apiKey.userId} (${dailyLimit}/hari)`,
       );
       throw new HttpException(
         {
           statusCode: HttpStatus.TOO_MANY_REQUESTS,
           error: 'Too Many Requests',
-          message: `Daily request limit exceeded. Max ${DAILY_LIMIT} requests per day per user.`,
+          message: `Daily request limit exceeded. Max ${dailyLimit} requests per day per user.`,
         },
         HttpStatus.TOO_MANY_REQUESTS,
       );

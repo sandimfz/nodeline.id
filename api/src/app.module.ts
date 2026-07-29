@@ -17,6 +17,7 @@ import { PublicApiModule } from './modules/public-api/public-api.module.js';
 import { UsageModule } from './modules/usage/usage.module.js';
 
 import { ApiDirectoryModule } from './modules/api-directory/api-directory.module.js';
+import { ThirdPartyModule } from './modules/third-party/third-party.module.js';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { ApiDirectoryModule } from './modules/api-directory/api-directory.module
     PublicApiModule,
     UsageModule,
     ApiDirectoryModule,
+    ThirdPartyModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

@@ -66,4 +66,10 @@ export default () => ({
     },
     redirectBase: process.env.OAUTH_REDIRECT_BASE ?? 'http://localhost:3001',
   },
+
+  thirdParty: {
+    giphy: process.env.GIPHY_API_KEY ?? '',
+    openweather: process.env.OPENWEATHERMAP_API_KEY ?? '',
+    exchangeRates: process.env.EXCHANGE_RATES_API_KEY ?? '',
+  },
 });
