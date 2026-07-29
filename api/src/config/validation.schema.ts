@@ -55,6 +55,11 @@ export const envValidationSchema = z.object({
   R2_ACCOUNT_ID: z.string().default(''),
   R2_PUBLIC_URL: z.string().optional(),
   R2_UPLOAD_EXPIRES_IN: z.coerce.number().int().positive().default(600),
+
+  // Third-party API keys (optional — proxy akan fallback jika tidak ada)
+  GIPHY_API_KEY: z.string().default(''),
+  OPENWEATHERMAP_API_KEY: z.string().default(''),
+  EXCHANGE_RATES_API_KEY: z.string().default(''),
 });
 
 export type EnvConfig = z.infer<typeof envValidationSchema>;

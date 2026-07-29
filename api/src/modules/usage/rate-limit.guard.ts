@@ -30,10 +30,17 @@ export class RateLimitGuard implements CanActivate {
     const apiKey = request.apiKey as
       | { id: string; rateLimitPerMin: number }
       | undefined;
+    const subscription = request.subscription as
+      | { requestsPerMinute: number | null }
+      | undefined;
 
     if (!apiKey?.id) {
       return true; // No API key = no rate limit (shouldn't reach here normally)
     }
+
+    // Use plan limit from subscription if available, fall back to api_key default
+    const rateLimit =
+      subscription?.requestsPerMinute ?? apiKey?.rateLimitPerMin ?? 60;
 
     const now = Date.now();
     const minuteBucket = Math.floor(now / 60_000);
@@ -50,15 +57,15 @@ export class RateLimitGuard implements CanActivate {
       return true;
     }
 
-    if (window.count >= apiKey.rateLimitPerMin) {
+    if (window.count >= rateLimit) {
       this.logger.warn(
-        `Rate limit exceeded: ${apiKey.id} (${apiKey.rateLimitPerMin}/min)`,
+        `Rate limit exceeded: ${apiKey.id} (${rateLimit}/min)`,
       );
       throw new HttpException(
         {
           statusCode: HttpStatus.TOO_MANY_REQUESTS,
           error: 'Too Many Requests',
-          message: `Rate limit exceeded. Max ${apiKey.rateLimitPerMin} requests per minute.`,
+          message: `Rate limit exceeded. Max ${rateLimit} requests per minute.`,
           retryAfter: Math.ceil((window.resetAt - now) / 1000),
         },
         HttpStatus.TOO_MANY_REQUESTS,
