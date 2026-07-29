@@ -13,3 +13,6 @@ kiro.json
 # client build artifacts
 client/.open-next/
 client/dist/
+
+# wrangler (Cloudflare Workers) build artifacts
+admin/.wrangler/
