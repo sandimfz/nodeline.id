@@ -46,8 +46,8 @@ const SUPPORTED_SYMBOLS = new Set([
   'NASDAQ:TSLA',
   'NASDAQ:AMZN',
   'NASDAQ:META',
-  'CRYPTOCAP:BTC',
-  'CRYPTOCAP:ETH',
+  'BINANCE:BTCUSDT',
+  'BINANCE:ETHUSDT',
 ]);
 
 /**
@@ -73,8 +73,11 @@ const SYMBOL_MAP: Record<string, string> = {
   AMZN: 'NASDAQ:AMZN',
   META: 'NASDAQ:META',
   // Crypto
-  BTC: 'CRYPTOCAP:BTC',
-  ETH: 'CRYPTOCAP:ETH',
+  BTC: 'BINANCE:BTCUSDT',
+  ETH: 'BINANCE:ETHUSDT',
+  // Market cap (terpisah dari harga real-time)
+  BTCCAP: 'CRYPTOCAP:BTC',
+  ETHCAP: 'CRYPTOCAP:ETH',
 };
 
 @Controller('market')
