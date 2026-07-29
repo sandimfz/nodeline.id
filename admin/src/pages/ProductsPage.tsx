@@ -78,11 +78,9 @@ export function ProductsPage() {
           </p>
         </div>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus data-icon="inline-start" />
-              Tambah Produk
-            </Button>
+          <DialogTrigger render={<Button />}>
+            <Plus data-icon="inline-start" />
+            Tambah Produk
           </DialogTrigger>
           <DialogContent className="sm:max-w-lg">
             <DialogHeader>

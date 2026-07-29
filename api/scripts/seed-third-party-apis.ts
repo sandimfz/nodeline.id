@@ -646,7 +646,7 @@ async function seed() {
               requests_per_minute, features, is_active, sort_order
             )
             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-            ON CONFLICT DO NOTHING`,
+            ON CONFLICT (service_id, name) DO NOTHING`,
           [
             randomUUID(),
             serviceId,
@@ -669,7 +669,7 @@ async function seed() {
               request_example, response_example, is_premium, sort_order
             )
             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-            ON CONFLICT DO NOTHING`,
+            ON CONFLICT (service_id, method, path) DO NOTHING`,
           [
             randomUUID(),
             serviceId,

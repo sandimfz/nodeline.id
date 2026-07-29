@@ -62,7 +62,7 @@ async function seed() {
       await client.query(
         `INSERT INTO api_plans (id, service_id, name, price_cents, requests_per_day, requests_per_minute, features, is_active, sort_order)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-         ON CONFLICT DO NOTHING`,
+         ON CONFLICT (service_id, name) DO NOTHING`,
         [randomUUID(), sId, plan.name, plan.priceCents, plan.requestsPerDay, plan.requestsPerMinute, JSON.stringify(plan.features), true, plan.sortOrder],
       );
     }
@@ -80,7 +80,7 @@ async function seed() {
       await client.query(
         `INSERT INTO api_endpoints (id, service_id, method, path, summary, is_premium, sort_order)
          VALUES ($1, $2, $3, $4, $5, $6, $7)
-         ON CONFLICT DO NOTHING`,
+         ON CONFLICT (service_id, method, path) DO NOTHING`,
         [randomUUID(), sId, ep.method, ep.path, ep.summary, ep.isPremium, ep.sortOrder],
       );
     }

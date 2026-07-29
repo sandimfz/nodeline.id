@@ -5,6 +5,7 @@ import {
   integer,
   boolean,
   jsonb,
+  unique,
 } from 'drizzle-orm/pg-core';
 import { apiServices } from './api-services.schema.js';
 
@@ -20,7 +21,9 @@ export const apiPlans = pgTable('api_plans', {
   features: jsonb('features'), // Array of feature strings
   isActive: boolean('is_active').notNull().default(true),
   sortOrder: integer('sort_order').notNull().default(0),
-});
+}, (t) => ({
+  uniquePlans: unique('uq_api_plans_service_name').on(t.serviceId, t.name),
+}));
 
 export type ApiPlan = typeof apiPlans.$inferSelect;
 export type NewApiPlan = typeof apiPlans.$inferInsert;
