@@ -1,0 +1,329 @@
+---
+title: Trading API
+description: Real-time forex, crypto, dan stock market data API
+---
+
+Trading API menyediakan akses real-time ke data pasar forex, crypto, saham, dan komoditas. Cocok untuk aplikasi trading, analisis teknikal, dashboard keuangan, dan bot trading.
+
+## Base URL
+
+```
+https://api.sandimf.dev/api/v1/market
+```
+
+## Autentikasi
+
+Semua request memerlukan API key. Kirim key melalui salah satu header berikut (pilih salah satu, tidak perlu keduanya):
+
+<Tabs items={['X-API-Key', 'Authorization Bearer']}>
+  <Tab value="X-API-Key">
+    ```bash
+    X-API-Key: nl_your_api_key_here
+    ```
+  </Tab>
+  <Tab value="Authorization Bearer">
+    ```bash
+    Authorization: Bearer nl_your_api_key_here
+    ```
+  </Tab>
+</Tabs>
+
+Request tanpa API key yang valid akan mendapat response `401 Unauthorized`.
+
+---
+
+## Endpoints
+
+### GET /price/:symbol
+
+Mendapatkan harga real-time (snapshot) untuk satu symbol.
+
+**Parameters:**
+
+| Nama | Tipe | Deskripsi |
+|------|------|-----------|
+| `symbol` | string | Kode symbol (misal: `FOREXCOM:XAUUSD`) |
+
+**Response:**
+
+```json
+{
+  "symbol": "FOREXCOM:XAUUSD",
+  "price": 2345.67,
+  "change": 12.34,
+  "changePercent": 0.53,
+  "high": 2350.12,
+  "low": 2340.45,
+  "volume": 1234567,
+  "timestamp": 1785071700000
+}
+```
+
+### GET /candles/:symbol
+
+Mendapatkan data OHLC candle historis (candle yang sudah selesai/closed).
+
+**Parameters:**
+
+| Nama | Tipe | Default | Deskripsi |
+|------|------|---------|-----------|
+| `symbol` | string | — | Kode symbol |
+| `interval` | string | `1m` | Interval: `1m`, `5m`, `15m`, `30m`, `1h`, `4h`, `1d` |
+| `limit` | integer | `100` | Jumlah candle (maks. 1000) |
+
+**Response:**
+
+```json
+{
+  "symbol": "FOREXCOM:XAUUSD",
+  "interval": "5m",
+  "candles": [
+    {
+      "open": 2345.00,
+      "high": 2350.12,
+      "low": 2342.50,
+      "close": 2348.75,
+      "volume": 15234,
+      "timestamp": 1785071700000
+    }
+  ]
+}
+```
+
+### GET /price/:symbol/candle
+
+Mendapatkan candle yang sedang berjalan (in-progress, belum closed) untuk interval tertentu. Gunakan endpoint ini bersama `/candles/:symbol` untuk menampilkan candlestick chart real-time — data historis dari `/candles`, candle terakhir yang masih "hidup" dari endpoint ini.
+
+**Parameters:**
+
+| Nama | Tipe | Default | Deskripsi |
+|------|------|---------|-----------|
+| `symbol` | string | — | Kode symbol |
+| `interval` | string | `1m` | Interval: `1m`, `5m`, `15m`, `30m`, `1h`, `4h`, `1d` |
+
+**Response:** Format sama seperti satu objek candle di atas.
+
+### GET /indicators/:symbol
+
+Mendapatkan indikator teknikal (RSI, EMA, SMA, MACD, Bollinger Bands) untuk symbol tertentu. Nilai indikator di-cache selama 10 detik.
+
+**Parameters:**
+
+| Nama | Tipe | Default | Deskripsi |
+|------|------|---------|-----------|
+| `symbol` | string | — | Kode symbol |
+| `timeframe` | integer | `1` | Timeframe indikator, dalam hari |
+
+**Response:**
+
+```json
+{
+  "symbol": "FOREXCOM:XAUUSD",
+  "timeframe": 15,
+  "indicators": {
+    "rsi": 62.5,
+    "ema20": 2340.00,
+    "sma50": 2330.50,
+    "macd": {
+      "value": 15.2,
+      "signal": 12.8,
+      "histogram": 2.4
+    },
+    "bbands": {
+      "upper": 2380.00,
+      "middle": 2345.00,
+      "lower": 2310.00
+    }
+  }
+}
+```
+
+### GET /price/:symbol/stream (SSE)
+
+Server-Sent Events stream untuk harga real-time. **Gunakan server-side** (bukan langsung dari browser client) agar API key tidak terekspos ke publik.
+
+Response memakai `Content-Type: text/event-stream`, satu event per tick harga:
+
+```
+data: {"symbol":"FOREXCOM:XAUUSD","price":2345.67,"change":12.34,"changePercent":0.53,"timestamp":1785071700000}
+
+data: {"symbol":"FOREXCOM:XAUUSD","price":2345.89,"change":12.56,"changePercent":0.54,"timestamp":1785071701000}
+```
+
+Koneksi bisa terputus sewaktu-waktu (network blip, restart server); disarankan implementasi reconnect otomatis di sisi client (server-side) Anda.
+
+---
+
+## Symbol yang Didukung
+
+Symbol berikut tersedia untuk semua paket. Symbol tambahan di luar daftar ini hanya tersedia untuk paket **Enterprise** (lihat *Custom Symbols* di tabel harga).
+
+<Accordions type="multiple">
+  <Accordion title="Forex">
+    - `FOREXCOM:XAUUSD` — Gold
+    - `FOREXCOM:XAGUSD` — Silver
+    - `FOREXCOM:EURUSD` — Euro / US Dollar
+    - `FOREXCOM:GBPUSD` — British Pound / US Dollar
+    - `FOREXCOM:USDJPY` — US Dollar / Japanese Yen
+    - `FOREXCOM:USDCAD` — US Dollar / Canadian Dollar
+    - `FOREXCOM:USDCHF` — US Dollar / Swiss Franc
+    - `FOREXCOM:AUDUSD` — Australian Dollar / US Dollar
+    - `FOREXCOM:NZDUSD` — New Zealand Dollar / US Dollar
+  </Accordion>
+  <Accordion title="Saham">
+    - `NASDAQ:AAPL` — Apple Inc.
+    - `NASDAQ:GOOGL` — Alphabet Inc.
+    - `NASDAQ:MSFT` — Microsoft Corporation
+    - `NASDAQ:TSLA` — Tesla Inc.
+    - `NASDAQ:AMZN` — Amazon.com Inc.
+    - `NASDAQ:META` — Meta Platforms Inc.
+  </Accordion>
+  <Accordion title="Crypto">
+    - `CRYPTOCAP:BTC` — Bitcoin
+    - `CRYPTOCAP:ETH` — Ethereum
+  </Accordion>
+</Accordions>
+
+---
+
+## Contoh Kode
+
+<Accordions type="multiple">
+  <Accordion title="cURL">
+
+```bash "Harga Real-time"
+curl -X GET "https://api.sandimf.dev/api/v1/market/price/FOREXCOM:XAUUSD" \
+  -H "X-API-Key: nl_your_api_key_here"
+```
+
+```bash "Candle OHLC"
+curl -X GET "https://api.sandimf.dev/api/v1/market/candles/FOREXCOM:XAUUSD?interval=5m&limit=50" \
+  -H "X-API-Key: nl_your_api_key_here"
+```
+
+```bash "Indikator Teknikal"
+curl -X GET "https://api.sandimf.dev/api/v1/market/indicators/FOREXCOM:XAUUSD?timeframe=15" \
+  -H "X-API-Key: nl_your_api_key_here"
+```
+
+```bash "SSE Stream"
+curl -N "https://api.sandimf.dev/api/v1/market/price/FOREXCOM:XAUUSD/stream" \
+  -H "X-API-Key: nl_your_api_key_here"
+```
+
+  </Accordion>
+  <Accordion title="JavaScript / TypeScript">
+
+```typescript "Harga Real-time"
+const API_KEY = "nl_your_api_key_here";
+const BASE = "https://api.sandimf.dev/api/v1/market";
+
+const response = await fetch(`${BASE}/price/FOREXCOM:XAUUSD`, {
+  headers: { "X-API-Key": API_KEY }
+});
+const data = await response.json();
+console.log(data.price, data.change, data.changePercent);
+```
+
+```typescript "Candle OHLC"
+const candles = await fetch(
+  `${BASE}/candles/FOREXCOM:XAUUSD?interval=5m&limit=50`,
+  { headers: { "X-API-Key": API_KEY } }
+).then(r => r.json());
+
+for (const c of candles.candles.slice(-3)) {
+  console.log(`O:${c.open} H:${c.high} L:${c.low} C:${c.close}`);
+}
+```
+
+```typescript "SSE Stream"
+// Gunakan server-side untuk menjaga API key tetap rahasia!
+const stream = await fetch(`${BASE}/price/FOREXCOM:XAUUSD/stream`, {
+  headers: { "X-API-Key": API_KEY }
+});
+const reader = stream.body!.getReader();
+const decoder = new TextDecoder();
+
+while (true) {
+  const { done, value } = await reader.read();
+  if (done) break;
+
+  const lines = decoder.decode(value).split('\n')
+    .filter(l => l.startsWith("data: "));
+
+  for (const line of lines) {
+    const tick = JSON.parse(line.slice(6));
+    console.log("Price:", tick.price);
+  }
+}
+```
+
+  </Accordion>
+  <Accordion title="Python">
+
+```python "Python"
+import requests
+
+API_KEY = "nl_your_api_key_here"
+BASE = "https://api.sandimf.dev/api/v1/market"
+headers = {"X-API-Key": API_KEY}
+
+# Harga real-time
+resp = requests.get(f"{BASE}/price/FOREXCOM:XAUUSD", headers=headers)
+data = resp.json()
+print(f"Harga: {data['price']} | Change: {data['change']} ({data['changePercent']}%)")
+
+# Candle history
+resp = requests.get(
+    f"{BASE}/candles/FOREXCOM:XAUUSD",
+    headers=headers,
+    params={"interval": "5m", "limit": 50}
+)
+candles = resp.json()["candles"]
+for c in candles[-3:]:
+    print(f"  O:{c['open']} H:{c['high']} L:{c['low']} C:{c['close']}")
+
+# Indikator teknikal
+resp = requests.get(
+    f"{BASE}/indicators/FOREXCOM:XAUUSD",
+    headers=headers,
+    params={"timeframe": 15}
+)
+indicators = resp.json()["indicators"]
+print(f"RSI: {indicators['rsi']} | EMA20: {indicators['ema20']}")
+```
+
+  </Accordion>
+</Accordions>
+
+## Kode Error
+
+Response error dikembalikan dalam format JSON, contoh:
+
+```json
+{
+  "statusCode": 429,
+  "message": "Rate limit exceeded",
+  "error": "Too Many Requests"
+}
+```
+
+| Kode | Deskripsi |
+|------|-----------|
+| `200` | Sukses |
+| `401` | API key tidak ada atau tidak valid |
+| `403` | Tidak punya akses ke symbol ini (perlu upgrade paket) |
+| `404` | Symbol tidak didukung atau data belum tersedia |
+| `429` | Batas request terlampaui (per-menit atau per-hari) |
+| `503` | API dinonaktifkan atau dalam pemeliharaan |
+| `500` | Kesalahan server internal |
+
+---
+
+## Rate Limiting
+
+- **Per menit:** dibatasi sesuai paket (60/300/1.000 request/menit)
+- **Per hari:** dibatasi sesuai paket (1.000/50.000/tak terbatas request/hari)
+- **Header response:** `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
+
+Jika limit tercapai, API mengembalikan status `429 Too Many Requests` dengan header `Retry-After` (dalam detik).

@@ -369,180 +369,52 @@ function PricingTab({ plans, slug }: { plans: ApiPlan[]; slug: string }) {
 }
 
 function DocsTab({ service }: { service: ApiServiceDetail }) {
-  // Build example paths from actual endpoints if available
-  const priceEndpoint = service.endpoints.find(
-    (ep) => ep.method === "GET" && ep.path.includes("/price/"),
-  );
-  const examplePath = priceEndpoint?.path ?? "/price/FOREXCOM:XAUUSD";
-  const exampleSymbol = "FOREXCOM:XAUUSD";
-
-  const curlExample = `# Harga real-time
-curl -X GET "${service.baseUrl}${examplePath.replace(":symbol", exampleSymbol)}" \\
-  -H "X-API-Key: nl_your_api_key_here"
-
-# Candle OHLC (interval: 1m, 5m, 15m, 30m, 1h, 4h, 1d)
-curl -X GET "${service.baseUrl}/candles/${exampleSymbol}?interval=5m&limit=50" \\
-  -H "X-API-Key: nl_your_api_key_here"
-
-# Indikator teknikal
-curl -X GET "${service.baseUrl}/indicators/${exampleSymbol}?timeframe=15" \\
-  -H "X-API-Key: nl_your_api_key_here"
-
-# SSE realtime stream
-curl -N "${service.baseUrl}${examplePath.replace(":symbol", exampleSymbol)}/stream" \\
-  -H "X-API-Key: nl_your_api_key_here"`;
-
-  const jsExample = `// Harga real-time
-const response = await fetch("${service.baseUrl}/price/${exampleSymbol}", {
-  headers: { "X-API-Key": "nl_your_api_key_here" }
-});
-const data = await response.json();
-console.log(data.price, data.change, data.changePercent);
-
-// SSE stream (server-side, jaga API key tetap rahasia)
-const stream = await fetch("${service.baseUrl}/price/${exampleSymbol}/stream", {
-  headers: { "X-API-Key": "nl_your_api_key_here" }
-});
-const reader = stream.body.getReader();
-const decoder = new TextDecoder();
-while (true) {
-  const { done, value } = await reader.read();
-  if (done) break;
-  const lines = decoder.decode(value).split("\\n")
-    .filter(l => l.startsWith("data: "));
-  for (const line of lines) {
-    const tick = JSON.parse(line.slice(6));
-    console.log("Price:", tick.price);
-  }
-}`;
-
-  const pythonExample = `import requests
-
-API_KEY = "nl_your_api_key_here"
-BASE = "${service.baseUrl}"
-headers = {"X-API-Key": API_KEY}
-
-# Harga real-time
-resp = requests.get(f"{BASE}/price/${exampleSymbol}", headers=headers)
-data = resp.json()
-print(f"Harga: {data['price']} | Change: {data['change']} ({data['changePercent']}%)")
-
-# Candle history
-resp = requests.get(
-    f"{BASE}/candles/${exampleSymbol}",
-    headers=headers,
-    params={"interval": "5m", "limit": 50}
-)
-candles = resp.json()["candles"]
-for c in candles[-3:]:
-    print(f"  O:{c['open']} H:{c['high']} L:{c['low']} C:{c['close']}")
-
-# Indikator teknikal
-resp = requests.get(
-    f"{BASE}/indicators/${exampleSymbol}",
-    headers=headers,
-    params={"timeframe": 15}
-)
-indicators = resp.json()["indicators"]
-print(f"RSI: {indicators['rsi']} | EMA20: {indicators['ema20']}")`;
+  // Tentukan URL docs-web berdasarkan slug service
+  const docsUrl =
+    service.slug === 'trading'
+      ? 'https://docs.sandimf.dev/docs/api/trading'
+      : `https://docs.sandimf.dev/docs/api/${service.slug}`;
 
   return (
-    <div className="flex flex-col gap-6 pt-6">
+    <div className="flex flex-col items-center gap-6 pt-12 text-center">
+      <div className="flex size-16 items-center justify-center rounded-2xl bg-muted">
+        <svg
+          className="size-8 text-muted-foreground"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.5}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
+          />
+        </svg>
+      </div>
       <div>
-        <h3 className="font-medium mb-3">Autentikasi</h3>
-        <p className="text-sm text-muted-foreground">
-          Semua request ke API ini memerlukan API key di header{" "}
-          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">X-API-Key</code>{" "}
-          atau{" "}
-          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">Authorization: Bearer &lt;key&gt;</code>.
-          Dapatkan API key gratis dengan klik &quot;Mulai Gratis&quot; di tab Harga.
+        <h3 className="text-lg font-semibold">Dokumentasi Lengkap</h3>
+        <p className="mt-1 text-sm text-muted-foreground max-w-sm">
+          Dokumentasi lengkap untuk API ini tersedia di Docs. Lihat endpoint, contoh kode, dan panduan autentikasi.
         </p>
       </div>
-
-      <Separator />
-
-      <div>
-        <h3 className="font-medium mb-3">Symbol yang Didukung</h3>
-        <div className="grid gap-2 sm:grid-cols-3 text-sm">
-          <div>
-            <p className="font-medium text-xs text-muted-foreground mb-1">Forex</p>
-            <ul className="space-y-0.5 font-mono text-xs">
-              <li>FOREXCOM:XAUUSD</li>
-              <li>FOREXCOM:XAGUSD</li>
-              <li>FOREXCOM:EURUSD</li>
-              <li>FOREXCOM:GBPUSD</li>
-              <li>FOREXCOM:USDJPY</li>
-              <li>FOREXCOM:USDCAD</li>
-              <li>FOREXCOM:USDCHF</li>
-              <li>FOREXCOM:AUDUSD</li>
-              <li>FOREXCOM:NZDUSD</li>
-            </ul>
-          </div>
-          <div>
-            <p className="font-medium text-xs text-muted-foreground mb-1">Saham</p>
-            <ul className="space-y-0.5 font-mono text-xs">
-              <li>NASDAQ:AAPL</li>
-              <li>NASDAQ:GOOGL</li>
-              <li>NASDAQ:MSFT</li>
-              <li>NASDAQ:TSLA</li>
-              <li>NASDAQ:AMZN</li>
-              <li>NASDAQ:META</li>
-            </ul>
-          </div>
-          <div>
-            <p className="font-medium text-xs text-muted-foreground mb-1">Crypto</p>
-            <ul className="space-y-0.5 font-mono text-xs">
-              <li>CRYPTOCAP:BTC</li>
-              <li>CRYPTOCAP:ETH</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      <Separator />
-
-      <div>
-        <h3 className="font-medium mb-3">Contoh Kode</h3>
-        <div className="flex flex-col gap-4">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground mb-1.5">cURL</p>
-            <pre className="overflow-auto rounded-lg bg-muted p-4 text-xs font-mono">{curlExample}</pre>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground mb-1.5">JavaScript / TypeScript</p>
-            <pre className="overflow-auto rounded-lg bg-muted p-4 text-xs font-mono">{jsExample}</pre>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground mb-1.5">Python</p>
-            <pre className="overflow-auto rounded-lg bg-muted p-4 text-xs font-mono">{pythonExample}</pre>
-          </div>
-        </div>
-      </div>
-
-      <Separator />
-
-      <div>
-        <h3 className="font-medium mb-3">Kode Error</h3>
-        <div className="overflow-hidden rounded-lg border">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/50">
-                <th className="px-4 py-2 text-left font-medium">Kode</th>
-                <th className="px-4 py-2 text-left font-medium">Deskripsi</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-b"><td className="px-4 py-2 font-mono">200</td><td className="px-4 py-2">Sukses</td></tr>
-              <tr className="border-b"><td className="px-4 py-2 font-mono">401</td><td className="px-4 py-2">API key tidak ada atau tidak valid</td></tr>
-              <tr className="border-b"><td className="px-4 py-2 font-mono">403</td><td className="px-4 py-2">Tidak punya akses ke symbol ini (perlu upgrade paket)</td></tr>
-              <tr className="border-b"><td className="px-4 py-2 font-mono">404</td><td className="px-4 py-2">Symbol tidak didukung atau data belum tersedia</td></tr>
-              <tr className="border-b"><td className="px-4 py-2 font-mono">429</td><td className="px-4 py-2">Batas request terlampaui (per-menit atau per-hari)</td></tr>
-              <tr className="border-b"><td className="px-4 py-2 font-mono">503</td><td className="px-4 py-2">API dinonaktifkan atau dalam pemeliharaan</td></tr>
-              <tr><td className="px-4 py-2 font-mono">500</td><td className="px-4 py-2">Kesalahan server internal</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <a
+        href={docsUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+      >
+        Buka Dokumentasi
+        <svg
+          className="size-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+        </svg>
+      </a>
     </div>
   );
 }
