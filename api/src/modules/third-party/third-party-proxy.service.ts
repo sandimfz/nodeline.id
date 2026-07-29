@@ -5,13 +5,15 @@ import {
 import { eq, sql } from 'drizzle-orm';
 import { DrizzleService } from '../../database/drizzle/drizzle.service.js';
 import { apiServices } from '../../database/drizzle/schema/index.js';
+import { RedisService } from '../../common/redis/redis.service.js';
 import type { ThirdPartyHandler } from './handlers/proxy-handler.interface.js';
 
 /**
  * Proxies requests to third-party APIs on behalf of authenticated users.
  *
  * Flow:
- *  1. Resolve the service's base URL from the directory (api_services).
+ *  1. Resolve the service's base URL from the directory (api_services),
+ *     cached via Redis for 60s.
  *  2. Find the matching ThirdPartyHandler for key injection.
  *  3. Construct the outbound URL, inject the secret key, fetch, and return.
  *  4. Increment quota_used_today on success.
@@ -20,17 +22,13 @@ import type { ThirdPartyHandler } from './handlers/proxy-handler.interface.js';
 export class ThirdPartyProxyService {
   private readonly logger = new Logger(ThirdPartyProxyService.name);
   private readonly handlers = new Map<string, ThirdPartyHandler>();
-  private readonly baseUrlCache = new Map<
-    string,
-    { baseUrl: string; at: number }
-  >();
-  private static readonly BASE_URL_CACHE_TTL = 60_000;
 
   // Allow overriding the global fetch for testing
   private readonly fetcher: typeof fetch;
 
   constructor(
     private readonly drizzle: DrizzleService,
+    private readonly redis: RedisService,
   ) {
     this.fetcher = globalThis.fetch.bind(globalThis);
   }
@@ -117,14 +115,13 @@ export class ThirdPartyProxyService {
   }
 
   /**
-   * Resolve the base URL for a service slug, cached for 60s.
+   * Resolve the base URL for a service slug, cached via Redis for 60s.
    */
   private async resolveBaseUrl(slug: string): Promise<string | null> {
-    const now = Date.now();
-    const cached = this.baseUrlCache.get(slug);
-    if (cached && now - cached.at < ThirdPartyProxyService.BASE_URL_CACHE_TTL) {
-      return cached.baseUrl;
-    }
+    const cacheKey = `baseurl:${slug}`;
+
+    const cached = await this.redis.get(cacheKey);
+    if (cached) return cached;
 
     const [service] = await this.drizzle.db
       .select({ baseUrl: apiServices.baseUrl })
@@ -136,7 +133,7 @@ export class ThirdPartyProxyService {
       return null;
     }
 
-    this.baseUrlCache.set(slug, { baseUrl: service.baseUrl, at: now });
+    await this.redis.set(cacheKey, service.baseUrl, 60);
     return service.baseUrl;
   }
 

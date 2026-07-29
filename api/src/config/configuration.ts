@@ -72,4 +72,8 @@ export default () => ({
     openweather: process.env.OPENWEATHERMAP_API_KEY ?? '',
     exchangeRates: process.env.EXCHANGE_RATES_API_KEY ?? '',
   },
+
+  redis: {
+    url: process.env.REDIS_URL ?? 'redis://localhost:6379',
+  },
 });

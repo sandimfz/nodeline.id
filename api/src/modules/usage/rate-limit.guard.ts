@@ -6,26 +6,23 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { RedisService } from '../../common/redis/redis.service.js';
 
 /**
- * Rate limit guard per API key using in-memory sliding window.
- * For multi-instance production, replace with Redis-backed implementation.
+ * Rate limit guard per API key using Redis sliding window.
+ *
+ * Key:  "ratelimit:{apiKeyId}:{minuteBucket}"
+ * - INCR on every request
+ * - EXPIRE 120s so stale keys auto-cleanup
+ * - Reset ke 1 tiap menit baru (minuteBucket berganti)
  */
-interface RateWindow {
-  /** Minute bucket key: `${apiKeyId}:${minute}` */
-  count: number;
-  resetAt: number;
-}
-
 @Injectable()
 export class RateLimitGuard implements CanActivate {
   private readonly logger = new Logger(RateLimitGuard.name);
-  private readonly windows = new Map<string, RateWindow>();
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(private readonly redis: RedisService) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const apiKey = request.apiKey as
       | { id: string; rateLimitPerMin: number }
@@ -35,7 +32,7 @@ export class RateLimitGuard implements CanActivate {
       | undefined;
 
     if (!apiKey?.id) {
-      return true; // No API key = no rate limit (shouldn't reach here normally)
+      return true;
     }
 
     // Use plan limit from subscription if available, fall back to api_key default
@@ -44,20 +41,21 @@ export class RateLimitGuard implements CanActivate {
 
     const now = Date.now();
     const minuteBucket = Math.floor(now / 60_000);
-    const key = `${apiKey.id}:${minuteBucket}`;
+    const key = `ratelimit:${apiKey.id}:${minuteBucket}`;
 
-    const window = this.windows.get(key);
-
-    if (!window || window.resetAt < now) {
-      // New window
-      this.windows.set(key, {
-        count: 1,
-        resetAt: (minuteBucket + 1) * 60_000,
-      });
+    const count = await this.redis.incr(key);
+    if (count === null) {
+      // Redis unavailable — fail-open agar tidak block traffic
       return true;
     }
 
-    if (window.count >= rateLimit) {
+    // Set expiry on first increment in this window
+    if (count === 1) {
+      await this.redis.expire(key, 120);
+    }
+
+    if (count > rateLimit) {
+      const resetAt = (minuteBucket + 1) * 60_000;
       this.logger.warn(
         `Rate limit exceeded: ${apiKey.id} (${rateLimit}/min)`,
       );
@@ -66,13 +64,12 @@ export class RateLimitGuard implements CanActivate {
           statusCode: HttpStatus.TOO_MANY_REQUESTS,
           error: 'Too Many Requests',
           message: `Rate limit exceeded. Max ${rateLimit} requests per minute.`,
-          retryAfter: Math.ceil((window.resetAt - now) / 1000),
+          retryAfter: Math.ceil((resetAt - now) / 1000),
         },
         HttpStatus.TOO_MANY_REQUESTS,
       );
     }
 
-    window.count++;
     return true;
   }
 }

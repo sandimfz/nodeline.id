@@ -8,6 +8,7 @@ import configuration from './config/configuration.js';
 import { envValidationSchema } from './config/validation.schema.js';
 import { DrizzleModule } from './database/drizzle/drizzle.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { RedisModule } from './common/redis/redis.module.js';
 import { MarketplaceModule } from './modules/marketplace/marketplace.module.js';
 import { ChatModule } from './modules/chat/chat.module.js';
 import { EventEmitterModule } from '@nestjs/event-emitter';
@@ -42,6 +43,7 @@ import { ThirdPartyModule } from './modules/third-party/third-party.module.js';
     ]),
     EventEmitterModule.forRoot(),
     DrizzleModule,
+    RedisModule,
     AuthModule,
     MarketplaceModule,
     ChatModule,

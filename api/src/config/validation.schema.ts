@@ -60,6 +60,9 @@ export const envValidationSchema = z.object({
   GIPHY_API_KEY: z.string().default(''),
   OPENWEATHERMAP_API_KEY: z.string().default(''),
   EXCHANGE_RATES_API_KEY: z.string().default(''),
+
+  // Redis
+  REDIS_URL: z.string().url().default('redis://localhost:6379'),
 });
 
 export type EnvConfig = z.infer<typeof envValidationSchema>;

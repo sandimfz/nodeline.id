@@ -5,38 +5,26 @@ import {
   HttpException,
   HttpStatus,
   Logger,
-  OnModuleDestroy,
 } from '@nestjs/common';
+import { RedisService } from '../../common/redis/redis.service.js';
 
 const DAILY_LIMIT = 50;
 
 /**
- * Per-user daily request limit (50 requests/hari).
+ * Per-user daily request limit via Redis.
  *
- * Melacak total request dari SEMUA API key milik user yang sama.
- * Reset otomatis setiap hari.
- *
- * Entry yang sudah lebih dari 2 hari dibersihkan periodik (setiap 10 menit)
- * untuk mencegah memory leak.
+ * Key:  "daily:{userId}:{YYYY-MM-DD}"
+ * - INCR on every request
+ * - EXPIREAT end-of-day (auto-reset besok)
+ * - Redis handle cleanup, no more periodic timer
  */
 @Injectable()
-export class UserDailyLimitGuard implements CanActivate, OnModuleDestroy {
+export class UserDailyLimitGuard implements CanActivate {
   private readonly logger = new Logger(UserDailyLimitGuard.name);
-  private readonly dailyCounts = new Map<string, { count: number; date: string }>();
-  private readonly cleanupTimer: ReturnType<typeof setInterval>;
 
-  constructor() {
-    // Bersihkan entry kadaluarsa setiap 10 menit
-    this.cleanupTimer = setInterval(() => {
-      this.cleanupStaleEntries();
-    }, 600_000);
-  }
+  constructor(private readonly redis: RedisService) {}
 
-  onModuleDestroy(): void {
-    clearInterval(this.cleanupTimer);
-  }
-
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const apiKey = request.apiKey as { userId?: string } | undefined;
     const subscription = request.subscription as
@@ -55,15 +43,23 @@ export class UserDailyLimitGuard implements CanActivate, OnModuleDestroy {
     }
 
     const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-    const key = `${apiKey.userId}:${today}`;
-    const entry = this.dailyCounts.get(key);
+    const key = `daily:${apiKey.userId}:${today}`;
 
-    if (!entry || entry.date !== today) {
-      this.dailyCounts.set(key, { count: 1, date: today });
+    const count = await this.redis.incr(key);
+    if (count === null) {
+      // Redis unavailable — fail-open
       return true;
     }
 
-    if (entry.count >= dailyLimit) {
+    // Set expiry on first increment — end of today
+    if (count === 1) {
+      const endOfDay = new Date();
+      endOfDay.setUTCHours(23, 59, 59, 999);
+      const secondsUntilEnd = Math.ceil((endOfDay.getTime() - Date.now()) / 1000);
+      await this.redis.expire(key, secondsUntilEnd);
+    }
+
+    if (count > dailyLimit) {
       this.logger.warn(
         `Daily limit exceeded: user=${apiKey.userId} (${dailyLimit}/hari)`,
       );
@@ -77,16 +73,6 @@ export class UserDailyLimitGuard implements CanActivate, OnModuleDestroy {
       );
     }
 
-    entry.count++;
     return true;
-  }
-
-  private cleanupStaleEntries(): void {
-    const today = new Date().toISOString().slice(0, 10);
-    for (const [key, entry] of this.dailyCounts) {
-      if (entry.date !== today) {
-        this.dailyCounts.delete(key);
-      }
-    }
   }
 }
