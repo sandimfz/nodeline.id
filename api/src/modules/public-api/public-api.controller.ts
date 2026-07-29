@@ -50,6 +50,33 @@ const SUPPORTED_SYMBOLS = new Set([
   'CRYPTOCAP:ETH',
 ]);
 
+/**
+ * Map short symbol names to TradingView full symbols.
+ * User cukup pakai XAUUSD, backend mapping ke FOREXCOM:XAUUSD secara internal.
+ */
+const SYMBOL_MAP: Record<string, string> = {
+  // Forex
+  XAUUSD: 'FOREXCOM:XAUUSD',
+  XAGUSD: 'FOREXCOM:XAGUSD',
+  GBPUSD: 'FOREXCOM:GBPUSD',
+  EURUSD: 'FOREXCOM:EURUSD',
+  USDJPY: 'FOREXCOM:USDJPY',
+  USDCAD: 'FOREXCOM:USDCAD',
+  USDCHF: 'FOREXCOM:USDCHF',
+  AUDUSD: 'FOREXCOM:AUDUSD',
+  NZDUSD: 'FOREXCOM:NZDUSD',
+  // Stocks
+  AAPL: 'NASDAQ:AAPL',
+  GOOGL: 'NASDAQ:GOOGL',
+  MSFT: 'NASDAQ:MSFT',
+  TSLA: 'NASDAQ:TSLA',
+  AMZN: 'NASDAQ:AMZN',
+  META: 'NASDAQ:META',
+  // Crypto
+  BTC: 'CRYPTOCAP:BTC',
+  ETH: 'CRYPTOCAP:ETH',
+};
+
 @Controller('market')
 @UseGuards(ServiceStatusGuard, ApiKeyGuard, RateLimitGuard, UserDailyLimitGuard)
 @UseInterceptors(UsageInterceptor)
@@ -76,10 +103,11 @@ export class PublicApiController {
   ): Promise<PriceSnapshot> {
     this.validateSymbol(symbol, allowedSymbols);
 
+    const tvSymbol = this.resolveSymbol(symbol);
     // Ensure symbol is subscribed to get live data
-    this.tradingView.subscribe(symbol);
+    this.tradingView.subscribe(tvSymbol);
 
-    const snapshot = this.tradingView.getSnapshot(symbol);
+    const snapshot = this.tradingView.getSnapshot(tvSymbol);
 
     if (!snapshot) {
       throw new NotFoundException(
@@ -103,17 +131,18 @@ export class PublicApiController {
   ) {
     this.validateSymbol(symbol, allowedSymbols);
 
+    const tvSymbol = this.resolveSymbol(symbol);
     // Ensure symbol is subscribed
-    this.tradingView.subscribe(symbol);
+    this.tradingView.subscribe(tvSymbol);
 
     const interval = this.validateInterval(query.interval ?? '1m');
     const limit = query.limit ?? 100;
 
     // Try DB first (persisted candles), then in-memory
-    const dbCandles = await this.candleRepo.queryCandles(symbol, interval, limit);
+    const dbCandles = await this.candleRepo.queryCandles(tvSymbol, interval, limit);
     const candles = dbCandles.length > 0
       ? dbCandles
-      : this.candleBuilder.getCandles(symbol, interval, limit);
+      : this.candleBuilder.getCandles(tvSymbol, interval, limit);
 
     return { symbol, interval, candles };
   }
@@ -136,10 +165,12 @@ export class PublicApiController {
     @CurrentApiKey('allowedSymbols') allowedSymbols: string[] | null,
   ) {
     this.validateSymbol(symbol, allowedSymbols);
-    this.tradingView.subscribe(symbol);
+
+    const tvSymbol = this.resolveSymbol(symbol);
+    this.tradingView.subscribe(tvSymbol);
 
     const validInterval = this.validateInterval(interval);
-    const candle = this.candleBuilder.getActiveCandle(symbol, validInterval);
+    const candle = this.candleBuilder.getActiveCandle(tvSymbol, validInterval);
 
     if (!candle) {
       throw new NotFoundException(
@@ -163,10 +194,11 @@ export class PublicApiController {
   ) {
     this.validateSymbol(symbol, allowedSymbols);
 
+    const tvSymbol = this.resolveSymbol(symbol);
     // Ensure symbol is subscribed
-    this.tradingView.subscribe(symbol);
+    this.tradingView.subscribe(tvSymbol);
 
-    const result = await this.scanner.getIndicators(symbol, query.timeframe ?? 1);
+    const result = await this.scanner.getIndicators(tvSymbol, query.timeframe ?? 1);
 
     if (!result) {
       throw new NotFoundException(
@@ -198,8 +230,9 @@ export class PublicApiController {
   ) {
     this.validateSymbol(symbol, allowedSymbols);
 
+    const tvSymbol = this.resolveSymbol(symbol);
     // Ensure symbol is subscribed for real-time data
-    this.tradingView.subscribe(symbol);
+    this.tradingView.subscribe(tvSymbol);
 
     // Set SSE headers
     res.setHeader('Content-Type', 'text/event-stream');
@@ -208,14 +241,14 @@ export class PublicApiController {
     res.setHeader('X-Accel-Buffering', 'no');
 
     // Send initial snapshot
-    const snapshot = this.tradingView.getSnapshot(symbol);
+    const snapshot = this.tradingView.getSnapshot(tvSymbol);
     if (snapshot) {
       res.write(`data: ${JSON.stringify(snapshot)}\n\n`);
     }
 
     // Subscribe to real-time ticks
     const handler = (tick: { symbol: string; price: number; change: number; changePercent: number; timestamp: number }) => {
-      if (tick.symbol !== symbol) return;
+      if (tick.symbol !== tvSymbol) return;
       res.write(`data: ${JSON.stringify(tick)}\n\n`);
     };
 
@@ -229,12 +262,21 @@ export class PublicApiController {
 
   // ── Helpers ──
 
+  /**
+   * Map short name → full TradingView symbol, or return as-is if not in map
+   * (supports direct usage like FOREXCOM:XAUUSD for backward compat).
+   */
+  private resolveSymbol(symbol: string): string {
+    return SYMBOL_MAP[symbol] ?? symbol;
+  }
+
   private validateSymbol(symbol: string, allowedSymbols: string[] | null): void {
-    if (!SUPPORTED_SYMBOLS.has(symbol)) {
+    const mapped = this.resolveSymbol(symbol);
+    if (!SUPPORTED_SYMBOLS.has(mapped)) {
       throw new NotFoundException(`Symbol ${symbol} tidak didukung`);
     }
 
-    if (allowedSymbols && !allowedSymbols.includes(symbol)) {
+    if (allowedSymbols && !allowedSymbols.includes(mapped)) {
       throw new ForbiddenException(
         `API key tidak memiliki akses ke symbol ${symbol}`,
       );
