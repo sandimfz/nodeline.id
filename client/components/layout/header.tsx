@@ -34,7 +34,7 @@ export function Header() {
         <div className="flex h-14 items-center gap-6">
           <Link href="/" className="flex items-center">
             <Image
-              src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/ai2/default.svg"
+              src="/logo/nodeline.svg"
               width={100}
               height={100}
               alt="Logo"

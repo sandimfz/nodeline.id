@@ -7,13 +7,19 @@
   "/(app)/orders/page": "app/(app)/orders/page.js",
   "/_global-error/page": "app/_global-error/page.js",
   "/_not-found/page": "app/_not-found/page.js",
+  "/api-directory/[slug]/page": "app/api-directory/[slug]/page.js",
+  "/api-directory/page": "app/api-directory/page.js",
   "/api/chat/ticket/route": "app/api/chat/ticket/route.js",
   "/api/v1/bff/[...path]/route": "app/api/v1/bff/[...path]/route.js",
+  "/auth/callback/github/page": "app/auth/callback/github/page.js",
+  "/auth/callback/google/page": "app/auth/callback/google/page.js",
   "/auth/login/page": "app/auth/login/page.js",
   "/auth/register/page": "app/auth/register/page.js",
   "/checkout/page": "app/checkout/page.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
   "/marketplace/[id]/page": "app/marketplace/[id]/page.js",
   "/marketplace/page": "app/marketplace/page.js",
-  "/page": "app/page.js"
+  "/page": "app/page.js",
+  "/robots.txt/route": "app/robots.txt/route.js",
+  "/sitemap.xml/route": "app/sitemap.xml/route.js"
 }

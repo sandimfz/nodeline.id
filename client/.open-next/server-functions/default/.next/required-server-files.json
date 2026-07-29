@@ -74,7 +74,15 @@
         },
         {
           "protocol": "https",
-          "hostname": "**"
+          "hostname": "cdn.jsdelivr.net"
+        },
+        {
+          "protocol": "https",
+          "hostname": "avatars.githubusercontent.com"
+        },
+        {
+          "protocol": "https",
+          "hostname": "lh3.googleusercontent.com"
         }
       ],
       "qualities": [
@@ -118,7 +126,7 @@
         "transform": "lodash/{{member}}"
       }
     },
-    "outputFileTracingRoot": "/home/alen/Projects/nodeline.id/client",
+    "outputFileTracingRoot": "/home/alen/stellar/Projects/nodeline.id/client",
     "cacheComponents": false,
     "cacheLife": {
       "default": {
@@ -318,11 +326,11 @@
     "bundlePagesRouterDependencies": false,
     "configFileName": "next.config.ts",
     "turbopack": {
-      "root": "/home/alen/Projects/nodeline.id/client"
+      "root": "/home/alen/stellar/Projects/nodeline.id/client"
     },
     "distDirRoot": ".next"
   },
-  "appDir": "/home/alen/Projects/nodeline.id/client",
+  "appDir": "/home/alen/stellar/Projects/nodeline.id/client",
   "relativeAppDir": "",
   "files": [
     ".next/package.json",

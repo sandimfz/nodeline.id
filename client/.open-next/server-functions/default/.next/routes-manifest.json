@@ -31,6 +31,14 @@
       "namedRegex": "^/api/v1/bff/(?<nxtPpath>.+?)(?:/)?$"
     },
     {
+      "page": "/api-directory/[slug]",
+      "regex": "^/api\\-directory/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPslug": "nxtPslug"
+      },
+      "namedRegex": "^/api\\-directory/(?<nxtPslug>[^/]+?)(?:/)?$"
+    },
+    {
       "page": "/marketplace/[id]",
       "regex": "^/marketplace/([^/]+?)(?:/)?$",
       "routeKeys": {
@@ -73,10 +81,28 @@
       "namedRegex": "^/api/chat/ticket(?:/)?$"
     },
     {
+      "page": "/api-directory",
+      "regex": "^/api\\-directory(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api\\-directory(?:/)?$"
+    },
+    {
       "page": "/api-keys",
       "regex": "^/api\\-keys(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/api\\-keys(?:/)?$"
+    },
+    {
+      "page": "/auth/callback/github",
+      "regex": "^/auth/callback/github(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/auth/callback/github(?:/)?$"
+    },
+    {
+      "page": "/auth/callback/google",
+      "regex": "^/auth/callback/google(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/auth/callback/google(?:/)?$"
     },
     {
       "page": "/auth/login",
@@ -131,6 +157,18 @@
       "regex": "^/orders(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/orders(?:/)?$"
+    },
+    {
+      "page": "/robots.txt",
+      "regex": "^/robots\\.txt(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/robots\\.txt(?:/)?$"
+    },
+    {
+      "page": "/sitemap.xml",
+      "regex": "^/sitemap\\.xml(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/sitemap\\.xml(?:/)?$"
     }
   ],
   "dataRoutes": [],

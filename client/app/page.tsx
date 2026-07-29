@@ -6,7 +6,7 @@ import { Hero } from "@/components/layout/hero";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://app.sandimf.dev";
 
 export const metadata: Metadata = {
-  title: "Beranda",
+  title: "Nodeline - Satu Platform untuk Semua Kebutuhan.",
   alternates: { canonical: "/" },
 };
 

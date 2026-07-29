@@ -5,11 +5,12 @@ import { AuthController } from './auth.controller.js';
 import { OAuthController } from './oauth.controller.js';
 import { JwtAccessStrategy } from './strategies/jwt-access.strategy.js';
 import { RolesGuard } from './guards/roles.guard.js';
+import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 
 @Module({
   imports: [JwtModule.register({})],
   controllers: [AuthController, OAuthController],
-  providers: [AuthService, JwtAccessStrategy, RolesGuard],
-  exports: [AuthService, RolesGuard],
+  providers: [AuthService, JwtAccessStrategy, RolesGuard, JwtAuthGuard],
+  exports: [AuthService, RolesGuard, JwtAuthGuard],
 })
 export class AuthModule {}
