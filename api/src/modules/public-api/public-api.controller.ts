@@ -118,7 +118,8 @@ export class PublicApiController {
       );
     }
 
-    return snapshot;
+    // Return response with user's short name, not internal TradingView symbol
+    return { ...snapshot, symbol };
   }
 
   /**
@@ -147,7 +148,9 @@ export class PublicApiController {
       ? dbCandles
       : this.candleBuilder.getCandles(tvSymbol, interval, limit);
 
-    return { symbol, interval, candles };
+    // Map symbol back to user's short name
+    const mapped = candles.map((c) => ({ ...c, symbol }));
+    return { symbol, interval, candles: mapped };
   }
 
   /**
@@ -181,7 +184,7 @@ export class PublicApiController {
       );
     }
 
-    return candle;
+    return { ...candle, symbol };
   }
 
   /**
@@ -246,13 +249,13 @@ export class PublicApiController {
     // Send initial snapshot
     const snapshot = this.tradingView.getSnapshot(tvSymbol);
     if (snapshot) {
-      res.write(`data: ${JSON.stringify(snapshot)}\n\n`);
+      res.write(`data: ${JSON.stringify({ ...snapshot, symbol })}\n\n`);
     }
 
     // Subscribe to real-time ticks
     const handler = (tick: { symbol: string; price: number; change: number; changePercent: number; timestamp: number }) => {
       if (tick.symbol !== tvSymbol) return;
-      res.write(`data: ${JSON.stringify(tick)}\n\n`);
+      res.write(`data: ${JSON.stringify({ ...tick, symbol })}\n\n`);
     };
 
     this.eventEmitter.on('tradingview.tick', handler);
