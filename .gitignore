@@ -9,3 +9,7 @@ graphify-out/*
 /.agents
 
 kiro.json
+
+# client build artifacts
+client/.open-next/
+client/dist/
