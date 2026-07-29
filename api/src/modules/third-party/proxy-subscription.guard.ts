@@ -2,6 +2,7 @@ import {
   Injectable,
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   Logger,
 } from '@nestjs/common';
 import { and, eq } from 'drizzle-orm';
@@ -13,17 +14,12 @@ import {
 } from '../../database/drizzle/schema/index.js';
 
 /**
- * Optionally looks up a subscription for (apiKey, service).
+ * Validates that the authenticated API key has an ACTIVE subscription for
+ * the requested service (identified by slug in the URL path).
  *
- * If an active subscription exists, attaches its plan limits to
- * `request.subscription` so downstream guards can use per-plan
- * rate limits and daily quotas.
- *
- * If no subscription exists, the request still proceeds — the
- * API key's default plan limits are used instead.
- *
- * This mirrors how the Trading API works: FREE by default,
- * subscribe to unlock higher limits.
+ * On success, attaches the subscription + plan details to
+ * `request.subscription` so downstream guards (RateLimitGuard,
+ * UserDailyLimitGuard) can read per-plan limits.
  */
 @Injectable()
 export class ProxySubscriptionGuard implements CanActivate {
@@ -36,51 +32,54 @@ export class ProxySubscriptionGuard implements CanActivate {
     const slug = request.params.slug as string | undefined;
     const apiKeyId = request.apiKey?.id as string | undefined;
 
-    if (!slug || !apiKeyId) {
-      return true;
+    if (!slug) {
+      throw new ForbiddenException('Service slug tidak ditemukan');
+    }
+    if (!apiKeyId) {
+      throw new ForbiddenException('API key tidak valid');
     }
 
-    try {
-      const subscription = await this.drizzle.db
-        .select({
-          id: apiSubscriptions.id,
-          status: apiSubscriptions.status,
-          quotaUsedToday: apiSubscriptions.quotaUsedToday,
-          quotaResetAt: apiSubscriptions.quotaResetAt,
-          planName: apiPlans.name,
-          requestsPerDay: apiPlans.requestsPerDay,
-          requestsPerMinute: apiPlans.requestsPerMinute,
-        })
-        .from(apiSubscriptions)
-        .innerJoin(
-          apiServices,
-          eq(apiSubscriptions.serviceId, apiServices.id),
-        )
-        .innerJoin(apiPlans, eq(apiSubscriptions.planId, apiPlans.id))
-        .where(
-          and(
-            eq(apiSubscriptions.apiKeyId, apiKeyId),
-            eq(apiServices.slug, slug),
-            eq(apiSubscriptions.status, 'ACTIVE'),
-          ),
-        )
-        .limit(1)
-        .then((rows) => rows[0] ?? null);
+    const subscription = await this.drizzle.db
+      .select({
+        id: apiSubscriptions.id,
+        status: apiSubscriptions.status,
+        quotaUsedToday: apiSubscriptions.quotaUsedToday,
+        quotaResetAt: apiSubscriptions.quotaResetAt,
+        planId: apiPlans.id,
+        planName: apiPlans.name,
+        requestsPerDay: apiPlans.requestsPerDay,
+        requestsPerMinute: apiPlans.requestsPerMinute,
+      })
+      .from(apiSubscriptions)
+      .innerJoin(
+        apiServices,
+        eq(apiSubscriptions.serviceId, apiServices.id),
+      )
+      .innerJoin(apiPlans, eq(apiSubscriptions.planId, apiPlans.id))
+      .where(
+        and(
+          eq(apiSubscriptions.apiKeyId, apiKeyId),
+          eq(apiServices.slug, slug),
+        ),
+      )
+      .limit(1)
+      .then((rows) => rows[0] ?? null);
 
-      if (subscription) {
-        request.subscription = {
-          id: subscription.id,
-          quotaUsedToday: subscription.quotaUsedToday,
-          quotaResetAt: subscription.quotaResetAt,
-          planName: subscription.planName,
-          requestsPerDay: subscription.requestsPerDay,
-          requestsPerMinute: subscription.requestsPerMinute,
-        };
-      }
-    } catch (err) {
-      // Fail-open: subscription lookup failure must not block the API
-      this.logger.warn(`Gagal lookup subscription: ${String(err)}`);
+    if (!subscription || subscription.status !== 'ACTIVE') {
+      throw new ForbiddenException(
+        'Tidak ada subscription aktif untuk layanan ini. Silakan subscribe terlebih dahulu.',
+      );
     }
+
+    // Attach plan + subscription info so downstream guards can use it
+    request.subscription = {
+      id: subscription.id,
+      quotaUsedToday: subscription.quotaUsedToday,
+      quotaResetAt: subscription.quotaResetAt,
+      planName: subscription.planName,
+      requestsPerDay: subscription.requestsPerDay,
+      requestsPerMinute: subscription.requestsPerMinute,
+    };
 
     return true;
   }

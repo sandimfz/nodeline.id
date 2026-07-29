@@ -28,9 +28,8 @@ import type { Request } from 'express';
 /**
  * Proxies requests to third-party APIs.
  *
- * FREE by default (cukup API key Nodeline). Bisa subscribe per-service
- * untuk upgrade ke plan PRO/ENTERPRISE dengan limit lebih tinggi —
- * mirip model Trading API.
+ * All routes require: service active + API key + active subscription.
+ * Rate limits and daily quotas are enforced per-subscription plan.
  *
  * URL pattern:  /api/v1/proxy/:slug/*path
  * Example:      GET /api/v1/proxy/giphy/gifs/random?tag=funny
